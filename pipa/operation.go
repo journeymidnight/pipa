@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	. "github.com/journeymidnight/pipa/error"
 	"github.com/journeymidnight/pipa/imagick"
-	"github.com/journeymidnight/pipa/library"
 	"strconv"
 )
 
@@ -44,6 +43,8 @@ func (r *Resize) SetSecondProcessFlag(flag bool) {
 func (r *Resize) GetOption(captures map[string]string) (err error) {
 	if r.flag == true {
 		if captures["P"] == "" {
+			r.plan.Proportion = 0
+		} else {
 			r.plan.Proportion, err = strconv.Atoi(captures["P"])
 			if err != nil {
 				return err
@@ -194,7 +195,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		return ErrInvalidWatermarkPicture
 	}
 	if captures["t"] == "" {
-		w.plan.Transparency = library.Transparency
+		w.plan.Transparency = imagick.Transparency
 	} else {
 		w.plan.Transparency, _ = strconv.Atoi(captures["t"])
 		if w.plan.Transparency < 0 || w.plan.Transparency > 100 {
@@ -204,9 +205,9 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 
 	switch captures["g"] {
 	case "":
-		w.plan.Position = library.SouthEast
-	case library.NorthWest, library.North, library.NorthEast, library.West, library.Center,
-		library.East, library.SouthWest, library.South, library.SouthEast:
+		w.plan.Position = imagick.SouthEast
+	case imagick.NorthWest, imagick.North, imagick.NorthEast, imagick.West, imagick.Center,
+		imagick.East, imagick.SouthWest, imagick.South, imagick.SouthEast:
 		w.plan.Position = captures["g"]
 	default:
 		return ErrInvalidParameter
@@ -272,7 +273,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	}
 
 	if captures["type"] == "" {
-		w.plan.TextMask.Type = library.DefaultTextType
+		w.plan.TextMask.Type = imagick.DefaultTextType
 	} else {
 		textType, err := base64.StdEncoding.DecodeString(captures["type"])
 		if err != nil {
@@ -284,7 +285,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	w.plan.TextMask.Color = checkColor(captures["color"])
 
 	if captures["size"] == "" {
-		w.plan.TextMask.Size = library.FrontSize
+		w.plan.TextMask.Size = imagick.FrontSize
 	} else {
 		w.plan.TextMask.Size, err = strconv.Atoi(captures["size"])
 		if err != nil {
@@ -377,7 +378,7 @@ func (w *Watermark) GetPictureData(data []byte) {
 
 func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	if w.plan.PictureMask.Image != "" {
-		downloadUrl, operations, err := parseUrl(w.domain + w.plan.PictureMask.Image)
+		downloadUrl, operations, err := ParseUrl(w.domain + w.plan.PictureMask.Image)
 		if err != nil {
 			return nil, err
 		}

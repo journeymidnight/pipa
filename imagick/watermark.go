@@ -1,7 +1,6 @@
 package imagick
 
 import (
-	"github.com/journeymidnight/pipa/library"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
@@ -28,7 +27,7 @@ type Text struct {
 }
 
 func newWatermark() Watermark {
-	return Watermark{library.XMargin, library.YMargin, GRAVITY, library.Transparency, nil, new(Text)}
+	return Watermark{XMargin, YMargin, GRAVITY, Transparency, nil, new(Text)}
 }
 
 func (img *ImageWand) watermark(o Watermark) (err error) {

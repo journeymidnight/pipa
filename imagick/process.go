@@ -27,8 +27,8 @@ type WatermarkPlan struct {
 	Voffset      int
 	PictureMask  WatermarkPicture
 	TextMask     WatermarkText
-	Order        int //default 0 图片水印在前 1 文字水印在前
-	Align        int //default 0 图片文字上对齐 1 中对齐 2 下对齐
+	Order        int //default 0:Image watermark in front 1:Text watermark in front
+	Align        int //default 0:align from the top 1:middle 2:bottom
 	Interval     int
 }
 
@@ -67,10 +67,14 @@ func Initialize() Library {
 	return imageProcess
 }
 
-func (img *ImageWand) Terminate() {
+func (img *ImageWand) Destory() {
 	img.MagickWand.Destroy()
 	img.DrawWand.Destroy()
 	img.PixelWand.Destroy()
+}
+
+func (img *ImageWand) Terminate() {
+	img.Destory()
 	imagick.Terminate()
 }
 
@@ -95,16 +99,18 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	o.Background = plan.Color
 
 	if plan.Data != nil {
-		factor, err := factorCalculations(img, plan.Data, float64(plan.Proportion))
-		if err != nil {
-			return err
+		if plan.Proportion != 0 {
+			factor, err := factorCalculations(img, plan.Data, float64(plan.Proportion))
+			if err != nil {
+				return err
+			}
+			o.Zoom = factor
+			err = img.resize(o)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
-		o.Zoom = factor
-		err = img.resize(o)
-		if err != nil {
-			return err
-		}
-		return nil
 	}
 
 	//proportion zoom
@@ -119,12 +125,12 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		return nil
 	}
 
+	o.Width = plan.Width
+	o.Height = plan.Height
 	switch plan.Mode {
 	//长边优先
 	case "lfit":
 		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
-		o.Width = plan.Width
-		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -134,8 +140,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	//短边优先
 	case "mfit":
 		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
-		o.Width = plan.Width
-		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -143,8 +147,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		}
 		break
 	case "pad":
-		o.Width = plan.Width
-		o.Height = plan.Height
 		o.Pad = true
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
@@ -153,8 +155,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		}
 		break
 	case "fixed":
-		o.Width = plan.Width
-		o.Height = plan.Height
 		o.Force = true
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
@@ -163,8 +163,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		}
 		break
 	case "fill":
-		o.Width = plan.Width
-		o.Height = plan.Height
 		o.Crop = true
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)

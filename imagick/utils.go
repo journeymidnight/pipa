@@ -2,16 +2,54 @@ package imagick
 
 import (
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/library"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
+const (
+	//Resize default param
+	Zoom       = 0.0
+	Force      = false
+	Crop       = false
+	Pad        = false
+	Limit      = true
+	//Watermark default param
+	XMargin      = 10
+	YMargin      = 10
+	Transparency = 100
+	FrontSize    = 40.0
+	Background   = "#FFFFFF"
+)
+
+const (
+	NorthWest = "nw"
+	North     = "north"
+	NorthEast = "ne"
+	West      = "west"
+	Center    = "center"
+	East      = "east"
+	SouthWest = "sw"
+	South     = "south"
+	SouthEast = "se"
+)
+
+//Text type
+const (
+	DefaultTextType   = "wqy-zenhei"
+	WQYZhenHei        = "wqy-zenhei"
+	WQYMicroHei       = "wqy-microhei"
+	FangZhengShuoSong = "fangzhengshusong"
+	FangZhengKaiTi    = "fangzhengkaiti"
+	FangZhengHeiTi    = "fangzhengheiti"
+	FangZhengFangSong = "fangzhengfangsong"
+	DroidSansFallBack = "droidsansfallback"
+)
+
 func adjustCropTask(plan ResizePlan, width, height uint) {
-	//单宽高缩放
+	//resize by width or height
 	if plan.Width+plan.Height != 0 && plan.Width*plan.Height == 0 {
 		return
 	}
-	//单长短边缩放
+	//resize by long or short
 	if plan.Long+plan.Short != 0 && plan.Long*plan.Short == 0 {
 		if plan.Long != 0 {
 			if width >= height {
@@ -33,9 +71,9 @@ func adjustCropTask(plan ResizePlan, width, height uint) {
 		return
 	}
 
-	//同时指定宽高缩放
+	//resize by width and height
 	if plan.Width > 0 && plan.Height > 0 {
-		if plan.Mode == "lfit" { //长边优先
+		if plan.Mode == "lfit" { //long first
 			if width >= height {
 				plan.Height = 0
 			} else {
@@ -43,7 +81,7 @@ func adjustCropTask(plan ResizePlan, width, height uint) {
 			}
 		}
 
-		if plan.Mode == "mfit" { //短边优先
+		if plan.Mode == "mfit" { //short first
 			if width >= height {
 				plan.Width = 0
 			} else {
@@ -53,9 +91,9 @@ func adjustCropTask(plan ResizePlan, width, height uint) {
 		return
 	}
 
-	//同时指定长短边缩放
+	//resize by long and short
 	if plan.Long > 0 && plan.Short > 0 {
-		if plan.Mode == "lfit" { //长边优先
+		if plan.Mode == "lfit" { //long first
 			if width >= height {
 				plan.Width = plan.Long
 				plan.Height = 0
@@ -65,8 +103,8 @@ func adjustCropTask(plan ResizePlan, width, height uint) {
 			}
 		}
 
-		if plan.Mode == "mfit" { //短边优先
-			if width >= height {
+		if plan.Mode == "mfit" {
+			if width >= height { //short first
 				plan.Height = plan.Short
 				plan.Width = 0
 			} else {
@@ -106,19 +144,19 @@ func factorCalculations(watermarkPicture *ImageWand, originPicture []byte, facto
 
 func selectTextType(tType string) string {
 	switch tType {
-	case library.WQYZhenHei:
+	case WQYZhenHei:
 		return "WQYZH.ttf"
-	case library.WQYMicroHei:
+	case WQYMicroHei:
 		return "WQYWMH.ttf"
-	case library.FangZhengShuoSong:
+	case FangZhengShuoSong:
 		return "FZSSJW.TTF"
-	case library.FangZhengKaiTi:
+	case FangZhengKaiTi:
 		return "FZKTJW.TTF"
-	case library.FangZhengHeiTi:
+	case FangZhengHeiTi:
 		return "FZHTJW.TTF"
-	case library.FangZhengFangSong:
+	case FangZhengFangSong:
 		return "FZFSJW.TTF"
-	case library.DroidSansFallBack:
+	case DroidSansFallBack:
 		return "DroidSansFallBack.ttf"
 	default:
 		return "WQYZH.ttf"

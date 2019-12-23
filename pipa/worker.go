@@ -151,7 +151,7 @@ func downloadImage(downloadUrl string) ([]byte, error) {
 }
 
 func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
-	downloadUrl, operations, err := parseUrl(taskData.Url)
+	downloadUrl, operations, err := ParseUrl(taskData.Url)
 	if err != nil {
 		return ImageProcessTask{}, err
 	}

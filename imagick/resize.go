@@ -2,7 +2,6 @@ package imagick
 
 import (
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/library"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"math"
 )
@@ -36,7 +35,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 		}
 	}
 
-	if o.Zoom != library.Zoom {
+	if o.Zoom != Zoom {
 		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*o.Zoom), uint(float64(originHeight)*o.Zoom), Method)
 		if err != nil {
 			helper.Log.Error("MagickWand resize image failed... err:", err)
@@ -80,8 +79,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 }
 
 func newResize() *Resize {
-	return &Resize{0, 0, library.Zoom, library.Force, library.Crop,
-		library.Pad, library.Limit, library.Background}
+	return &Resize{0, 0, Zoom, Force, Crop, Pad, Limit, Background}
 }
 
 func imageCalculations(o *Resize, inWidth, inHeight int) float64 {

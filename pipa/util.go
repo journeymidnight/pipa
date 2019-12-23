@@ -8,11 +8,12 @@ import (
 )
 
 const (
+	UrlHead      = "http://"
 	OssProcess   = "?x-oss-process=image/"
 	DefaultColor = "#FFFFFF"
 )
 
-func parseUrl(taskUrl string) (downloadUrl string, operations []Operation, err error) {
+func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
 	urlFragments := strings.Split(taskUrl, "&")
@@ -26,7 +27,7 @@ func parseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 	if err != nil {
 		return "", operations, err
 	}
-	host := "http://" + path.Hostname()
+	host := UrlHead + path.Hostname()
 	objectPath := path.EscapedPath()
 	downloadUrl = host + objectPath
 	for i := 1; i < len(urlFragments); i++ {
