@@ -1,12 +1,17 @@
 package pipa
 
 import (
-	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/redis"
-	"fmt"
 	"encoding/json"
-	. "github.com/journeymidnight/pipa/library"
+	"fmt"
 	. "github.com/journeymidnight/pipa/error"
+	"github.com/journeymidnight/pipa/helper"
+	. "github.com/journeymidnight/pipa/library"
+	"github.com/journeymidnight/pipa/redis"
+	"io/ioutil"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
 )
 
 const TaskQueue = "taskQueue"
@@ -40,7 +45,6 @@ type FinishedTask struct {
 	uuid string
 	url  string
 	blob []byte
-	mime string
 }
 
 func StartWorker() {
@@ -92,8 +96,7 @@ func slave(slave_num int) {
 				continue
 			}
 
-			//TODO: Download Origin Image
-			data, err := downloadImage(taskData.Url)
+			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
 				returnError(err, taskData)
 				continue
@@ -107,22 +110,56 @@ func slave(slave_num int) {
 					break
 				}
 			}
+			ReturnQ <- FinishedTask{200,taskData.UUID,taskData.Url,data}
 		}
 	}
 }
 
 func downloadImage(downloadUrl string) ([]byte, error) {
-	return nil, nil
+	helper.Log.Info(fmt.Sprintf("Start to download %s\n", downloadUrl))
+
+	httpClient := &http.Client{Timeout: time.Second * 5}
+	resp, err := httpClient.Get(downloadUrl)
+
+	if err != nil {
+		helper.Log.Error("Download failed!", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	//check header
+	if resp.StatusCode != 200 {
+		helper.Log.Info("Request is not 200")
+		return nil, ErrDownloadCode
+	}
+
+	mimeType := resp.Header.Get("Content-Type")
+
+	if strings.Contains(mimeType, "image") == false {
+		if ok, _ := regexp.MatchString("(jpeg|jpg|png|gif|bmp|webp|tiff)", downloadUrl); ok == false {
+			helper.Log.Info(fmt.Sprintf("MIME TYPE is %s not an image\n", mimeType))
+			return nil, StatusUnsupportedMediaType //415
+		}
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
-	// TODO: parse Url by using url.Parse(), return operations and error
-	// url.Parse(taskData.Url)
-	// get downloadUrl, Operations.
+	downloadUrl, operations, err := parseUrl(taskData.Url)
+	if err != nil {
+		return ImageProcessTask{}, err
+	}
+
 	return ImageProcessTask{
-		lib: lib,
-		ops:,
-		downloadUrl:,
+		lib:         lib,
+		ops:         operations,
+		downloadUrl: downloadUrl,
 	}, nil
 }
 
@@ -132,7 +169,6 @@ func listenFinishedTask(resultQ chan FinishedTask) {
 	for r := range resultQ {
 		//put data back to redis
 		if r.code == 200 {
-			//combined := combineData(r.blob, r.mime)
 			c.Do("MULTI")
 			c.Do("SET", r.url, r.blob)
 			c.Do("LPUSH", r.uuid, r.code)
@@ -154,7 +190,7 @@ func returnError(err error, t Task) {
 		code = 400
 	}
 	helper.Log.Error(err)
-	result := FinishedTask{code, t.UUID, t.Url, nil, ""}
+	result := FinishedTask{code, t.UUID, t.Url, nil}
 	sendResult(result)
 }
 

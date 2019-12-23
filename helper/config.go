@@ -42,7 +42,8 @@ func SetupGlobalConfig() {
 
 	Config.LogLevel = c.LogLevel
 	Config.LogPath = c.LogPath
-	Config.WorkerNumber = c.WorkerNumber
+	Config.WorkersNumber = c.WorkersNumber
+	Config.MaxTaskNumber = c.MaxTaskNumber
 
 	Config.RedisAddress = c.RedisAddress
 	Config.RedisPassword = c.RedisPassword
