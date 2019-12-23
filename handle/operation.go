@@ -1,4 +1,4 @@
-package pipa
+package handle
 
 import (
 	"encoding/base64"
@@ -160,6 +160,8 @@ func (r *Resize) GetPictureData(data []byte) {
 }
 
 func (r *Resize) DoProcess(data []byte) (result []byte, err error) {
+	r.img = imagick.NewImageWand()
+	defer r.img.Destory()
 	err = r.img.ResizeImageProcess(data, r.plan)
 	if err != nil {
 		return data, err
@@ -377,6 +379,8 @@ func (w *Watermark) GetPictureData(data []byte) {
 }
 
 func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
+	w.img = imagick.NewImageWand()
+	defer w.img.Destory()
 	if w.plan.PictureMask.Image != "" {
 		downloadUrl, operations, err := ParseUrl(w.domain + w.plan.PictureMask.Image)
 		if err != nil {

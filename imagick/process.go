@@ -3,7 +3,6 @@ package imagick
 import (
 	. "github.com/journeymidnight/pipa/error"
 	"github.com/journeymidnight/pipa/helper"
-	. "github.com/journeymidnight/pipa/library"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
@@ -61,10 +60,9 @@ type ImageWand struct {
 	DrawWand   *imagick.DrawingWand
 }
 
-func Initialize() Library {
+func Initialize() (lib interface{}) {
 	imagick.Initialize()
-	imageProcess := NewImageWand()
-	return imageProcess
+	return lib
 }
 
 func (img *ImageWand) Destory() {
@@ -74,24 +72,23 @@ func (img *ImageWand) Destory() {
 }
 
 func (img *ImageWand) Terminate() {
-	img.Destory()
 	imagick.Terminate()
 }
 
-func NewImageWand() (lib Library) {
+func NewImageWand() ImageWand {
 	img := ImageWand{
 		MagickWand: imagick.NewMagickWand(),
 		PixelWand:  imagick.NewPixelWand(),
 		DrawWand:   imagick.NewDrawingWand(),
 	}
-	return &img
+	return img
 }
 
 func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	helper.Log.Info("start resize image, plan: ", )
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
-		helper.Log.Error("read data failed")
+		helper.Log.Error("read data failed", err)
 		return err
 	}
 	o := newResize()
@@ -128,7 +125,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	o.Width = plan.Width
 	o.Height = plan.Height
 	switch plan.Mode {
-	//长边优先
 	case "lfit":
 		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
 		helper.Log.Info("trans params ", o)
@@ -137,7 +133,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 			return err
 		}
 		break
-	//短边优先
 	case "mfit":
 		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
 		helper.Log.Info("trans params ", o)
@@ -177,7 +172,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 	helper.Log.Info("start resize image, plan: ", )
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
-		helper.Log.Error("read data failed")
+		helper.Log.Error("read data failed", err)
 		return err
 	}
 	w := newWatermark()

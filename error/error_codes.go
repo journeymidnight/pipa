@@ -6,6 +6,7 @@ const (
 	Ok PipaError = iota
 	ErrInvalidTaskString
 	ErrDownloadCode
+	StatusRequestEntityTooLarge
 	StatusUnsupportedMediaType
 	ErrNotFoundOssProcess
 	ErrInvalidParameter
@@ -31,6 +32,10 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	ErrDownloadCode: {
 		ErrorCode:    401,
 		ErrorMessage: "Download response code is not 200",
+	},
+	StatusRequestEntityTooLarge: {
+		ErrorCode:    413,
+		ErrorMessage: "Picture too large",
 	},
 	StatusUnsupportedMediaType: {
 		ErrorCode:    415,

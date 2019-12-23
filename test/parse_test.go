@@ -1,8 +1,7 @@
 package test
 
 import (
-	. "github.com/journeymidnight/pipa/error"
-	"github.com/journeymidnight/pipa/pipa"
+	"github.com/journeymidnight/pipa/handle"
 	"testing"
 )
 
@@ -27,7 +26,7 @@ const (
 func Test_ParseUrl(t *testing.T) {
 	urlRightOne := BucketDomain + ObjectName + Key + Resize + "lfit" + Width + "150" +
 		Height + "150" + Watermark + Position + "center" + XMargin + "140" + YMargin + "150"
-	downloadUrl, _, err := pipa.ParseUrl(urlRightOne)
+	downloadUrl, _, err := handle.ParseUrl(urlRightOne)
 	if err != nil {
 		t.Fatal("ParseUrl is wrong")
 	} else if downloadUrl != BucketDomain+ObjectName {
@@ -36,7 +35,7 @@ func Test_ParseUrl(t *testing.T) {
 
 	urlRightTwo := BucketDomain + ObjectName + Key + Resize + "lfit" + Width + "150" +
 		Height + "150" + Watermark + Position + "center" + XMargin + "140" + "y"
-	downloadUrl, _, err = pipa.ParseUrl(urlRightTwo)
+	downloadUrl, _, err = handle.ParseUrl(urlRightTwo)
 	if err != nil {
 		t.Fatal("ParseUrl is wrong")
 	} else if downloadUrl != BucketDomain+ObjectName {
@@ -45,7 +44,7 @@ func Test_ParseUrl(t *testing.T) {
 
 	urlRightThree := BucketDomain + ObjectName + Key + Resize + "lfit" + Width + "150" +
 		Height + "150" + Watermark + Position + "center" + XMargin + "140" + "y" + OtherParams
-	downloadUrl, _, err = pipa.ParseUrl(urlRightThree)
+	downloadUrl, _, err = handle.ParseUrl(urlRightThree)
 	if err != nil {
 		t.Fatal("ParseUrl is wrong")
 	} else if downloadUrl != BucketDomain+ObjectName+OtherParams {

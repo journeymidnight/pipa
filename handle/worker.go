@@ -1,4 +1,4 @@
-package pipa
+package handle
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -140,6 +141,10 @@ func downloadImage(downloadUrl string) ([]byte, error) {
 			helper.Log.Info(fmt.Sprintf("MIME TYPE is %s not an image\n", mimeType))
 			return nil, StatusUnsupportedMediaType //415
 		}
+	}
+	contentLength := resp.Header.Get("Content-Length")
+	if len, _ := strconv.Atoi(contentLength); len > (20 << 20) {
+		return nil, StatusRequestEntityTooLarge
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)

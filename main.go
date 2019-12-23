@@ -6,7 +6,7 @@ import (
 	"syscall"
 
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/pipa"
+	"github.com/journeymidnight/pipa/handle"
 	"github.com/journeymidnight/pipa/redis"
 )
 
@@ -20,7 +20,7 @@ func main() {
 	redis.Initialize()
 	defer redis.Close()
 
-	pipa.StartWorker()
+	handle.StartWorker()
 
 	signal.Ignore()
 	signalQueue := make(chan os.Signal)
