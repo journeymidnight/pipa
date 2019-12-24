@@ -247,6 +247,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		}
 		return nil
 	} else if plan.TextMask.Text != "" {
+		w.Text.text = plan.TextMask.Text
 		w.Transparency = plan.Transparency
 		w.Text.color = plan.TextMask.Color
 		w.Text.textType = selectTextType(plan.TextMask.Type)

@@ -254,7 +254,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	if captures["image"] == "" {
 		w.plan.PictureMask.Image = ""
 	} else {
-		imageUrl, err := base64.StdEncoding.DecodeString(captures["image"])
+		imageUrl, err := base64.URLEncoding.DecodeString(captures["image"])
 		if err != nil {
 			return err
 		}
@@ -267,7 +267,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		if len(captures["text"]) > 64 {
 			return ErrInvalidParameter
 		}
-		text, err := base64.StdEncoding.DecodeString(captures["text"])
+		text, err := base64.URLEncoding.DecodeString(captures["text"])
 		if err != nil {
 			return err
 		}
@@ -277,7 +277,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	if captures["type"] == "" {
 		w.plan.TextMask.Type = imagick.DefaultTextType
 	} else {
-		textType, err := base64.StdEncoding.DecodeString(captures["type"])
+		textType, err := base64.URLEncoding.DecodeString(captures["type"])
 		if err != nil {
 			return err
 		}

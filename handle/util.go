@@ -16,7 +16,7 @@ const (
 func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
-	urlFragments := strings.Split(taskUrl, "&")
+	urlFragments := strings.Split(taskUrl, "\u0026")
 
 	pos := strings.Index(urlFragments[0], OssProcess)
 	if pos == -1 {
@@ -33,12 +33,13 @@ func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 	objectPath := path.EscapedPath()
 	downloadUrl = host + objectPath
 	if len(urlFragments) > 1 {
-		for i := 0; i < len(urlFragments[1:]); i++ {
+		downloadUrl = downloadUrl + "?" + urlFragments[1]
+		for i := 2; i < len(urlFragments); i++ {
 			downloadUrl += "&" + urlFragments[i]
 		}
 	}
 
-	params := taskUrl[pos+len(OssProcess):]
+	params := urlFragments[0][pos+len(OssProcess):]
 
 	for _, param := range strings.Split(params, "/") {
 		operation, err := parseParam(param)

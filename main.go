@@ -5,8 +5,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/journeymidnight/pipa/helper"
 	"github.com/journeymidnight/pipa/handle"
+	"github.com/journeymidnight/pipa/helper"
 	"github.com/journeymidnight/pipa/redis"
 )
 
@@ -17,6 +17,7 @@ func main() {
 	helper.Log = helper.NewFileLogger(helper.Config.LogPath, logLevel)
 	defer helper.Log.Close()
 
+	helper.Log.Info("Pipa start!")
 	redis.Initialize()
 	defer redis.Close()
 
@@ -34,7 +35,7 @@ func main() {
 			// TODO: Dump something?
 		default:
 			// TODO: Stop pipa server with graceful shutdown
-
+			helper.Log.Info("Pipa stop!")
 			return
 		}
 	}
