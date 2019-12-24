@@ -16,6 +16,7 @@ import (
 )
 
 const TaskQueue = "taskQueue"
+const PictureMAxSize = 20 << 20
 
 var (
 	TaskQ   chan string
@@ -57,11 +58,10 @@ func StartWorker() {
 	}
 	go listenFinishedTask(ReturnQ)
 
-	//TODO: Use signal channel to quit
+	defer close(TaskQ)
 	for {
 		t, err := receiveImageTask()
 		if err != nil {
-			helper.Log.Error("receive image task error:", err)
 			continue
 		}
 		helper.Log.Info("receive image task:", t)
@@ -78,6 +78,7 @@ func receiveImageTask() (string, error) {
 }
 
 func slave(slave_num int) {
+	defer close(ReturnQ)
 	for {
 		select {
 		case task := <-TaskQ:
@@ -111,7 +112,7 @@ func slave(slave_num int) {
 					break
 				}
 			}
-			ReturnQ <- FinishedTask{200,taskData.UUID,taskData.Url,data}
+			ReturnQ <- FinishedTask{200, taskData.UUID, taskData.Url, data}
 		}
 	}
 }
@@ -143,7 +144,7 @@ func downloadImage(downloadUrl string) ([]byte, error) {
 		}
 	}
 	contentLength := resp.Header.Get("Content-Length")
-	if len, _ := strconv.Atoi(contentLength); len > (20 << 20) {
+	if len, _ := strconv.Atoi(contentLength); len > PictureMAxSize {
 		return nil, StatusRequestEntityTooLarge
 	}
 

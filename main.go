@@ -29,7 +29,7 @@ func main() {
 		s := <-signalQueue
 		switch s {
 		case syscall.SIGHUP:
-			// TODO: Reload Service?
+			helper.SetupGlobalConfig()
 		case syscall.SIGUSR1:
 			// TODO: Dump something?
 		default:

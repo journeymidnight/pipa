@@ -91,6 +91,12 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		helper.Log.Error("read data failed", err)
 		return err
 	}
+	originWidth := int(img.MagickWand.GetImageWidth())
+	originHeight := int(img.MagickWand.GetImageHeight())
+	if originHeight > 30000 || originWidth > 30000 {
+		return ErrPictureWidthOrHeightTooLong
+	}
+
 	o := newResize()
 	o.Limit = plan.Limit
 	o.Background = plan.Color
@@ -126,7 +132,7 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	o.Height = plan.Height
 	switch plan.Mode {
 	case "lfit":
-		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
+		adjustCropTask(plan, originWidth, originHeight)
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -134,7 +140,7 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		}
 		break
 	case "mfit":
-		adjustCropTask(plan, img.MagickWand.GetImageWidth(), img.MagickWand.GetImageHeight())
+		adjustCropTask(plan, originWidth, originHeight)
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -175,9 +181,12 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		helper.Log.Error("read data failed", err)
 		return err
 	}
-	w := newWatermark()
 	originWidth := int(img.MagickWand.GetImageWidth())
 	originHeight := int(img.MagickWand.GetImageHeight())
+	if originHeight > 30000 || originWidth > 30000 {
+		return ErrPictureWidthOrHeightTooLong
+	}
+	w := newWatermark()
 	if plan.PictureMask.Image != "" {
 		picture := imagick.NewMagickWand()
 		err := picture.ReadImageBlob(plan.PictureMask.Data)
@@ -304,7 +313,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		}
 		return nil
 	} else {
-		return ErrInvalidWatermarkParameter
+		return ErrInvalidWatermarkProcess
 	}
 }
 

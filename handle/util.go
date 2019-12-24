@@ -27,11 +27,15 @@ func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 	if err != nil {
 		return "", operations, err
 	}
+	//path.Hostname():s3.test.com
 	host := UrlHead + path.Hostname()
+	// /osstest.jpg
 	objectPath := path.EscapedPath()
 	downloadUrl = host + objectPath
-	for i := 1; i < len(urlFragments); i++ {
-		downloadUrl += urlFragments[i]
+	if len(urlFragments) > 1 {
+		for i := 0; i < len(urlFragments[1:]); i++ {
+			downloadUrl += "&" + urlFragments[i]
+		}
 	}
 
 	params := taskUrl[pos+len(OssProcess):]

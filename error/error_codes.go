@@ -11,8 +11,9 @@ const (
 	ErrNotFoundOssProcess
 	ErrInvalidParameter
 	ErrInvalidParameterFormat
-	ErrInvalidWatermarkParameter
+	ErrInvalidWatermarkProcess
 	ErrInvalidWatermarkPicture
+	ErrPictureWidthOrHeightTooLong
 )
 
 type ErrorStruct struct {
@@ -51,15 +52,19 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	},
 	ErrInvalidParameterFormat: {
 		ErrorCode:    405,
-		ErrorMessage: "Invalid parameter.",
+		ErrorMessage: "Invalid parameter format.",
 	},
-	ErrInvalidWatermarkParameter: {
+	ErrInvalidWatermarkProcess: {
 		ErrorCode:    406,
-		ErrorMessage: "Invalid parameter.",
+		ErrorMessage: "Invalid watermark parameter.",
 	},
 	ErrInvalidWatermarkPicture: {
 		ErrorCode:    406,
 		ErrorMessage: "Invalid watermark picture.",
+	},
+	ErrPictureWidthOrHeightTooLong: {
+		ErrorCode:    407,
+		ErrorMessage: "Picture Width or Height too long",
 	},
 }
 

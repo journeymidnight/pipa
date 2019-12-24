@@ -382,7 +382,7 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	w.img = imagick.NewImageWand()
 	defer w.img.Destory()
 	if w.plan.PictureMask.Image != "" {
-		downloadUrl, operations, err := ParseUrl(w.domain + w.plan.PictureMask.Image)
+		downloadUrl, operations, err := ParseUrl(w.domain + "/" + w.plan.PictureMask.Image)
 		if err != nil {
 			return nil, err
 		}
@@ -397,7 +397,6 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 			if err != nil {
 				return nil, err
 			}
-			op.Close()
 		}
 	}
 

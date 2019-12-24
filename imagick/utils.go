@@ -44,7 +44,7 @@ const (
 	DroidSansFallBack = "droidsansfallback"
 )
 
-func adjustCropTask(plan ResizePlan, width, height uint) {
+func adjustCropTask(plan ResizePlan, width, height int) {
 	//resize by width or height
 	if plan.Width+plan.Height != 0 && plan.Width*plan.Height == 0 {
 		return
