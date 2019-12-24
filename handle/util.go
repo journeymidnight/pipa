@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"encoding/base64"
 	. "github.com/journeymidnight/pipa/error"
 	"net/url"
 	"strconv"
@@ -27,7 +28,7 @@ func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 	if err != nil {
 		return "", operations, err
 	}
-	//path.Hostname():s3.test.com
+	//path.Hostname():*.s3.test.com
 	host := UrlHead + path.Hostname()
 	// /osstest.jpg
 	objectPath := path.EscapedPath()
@@ -45,9 +46,6 @@ func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 		operation, err := parseParam(param)
 		if err != nil {
 			return "", operations, err
-		}
-		if operation.GetType() == WATERMARK {
-			operation.SetDomain(host)
 		}
 		switch operation.GetType() {
 		case WATERMARK:
@@ -122,4 +120,16 @@ func checkColor(color string) string {
 	default:
 		return DefaultColor
 	}
+}
+
+func ParseBase64String(str string) (string, error) {
+	mod4String := len(str) % 4
+	equalSign := "===="
+	str += equalSign[4-mod4String:]
+
+	data, err := base64.StdEncoding.DecodeString(strings.TrimSpace(str))
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

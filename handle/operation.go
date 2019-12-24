@@ -1,10 +1,10 @@
 package handle
 
 import (
-	"encoding/base64"
 	. "github.com/journeymidnight/pipa/error"
 	"github.com/journeymidnight/pipa/imagick"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -15,6 +15,7 @@ const (
 type Operation interface {
 	GetType() string
 	SetDomain(domain string)
+	//whether process watermark picture
 	SetSecondProcessFlag(flag bool)
 	GetOption(captures map[string]string) (err error)
 	GetPictureData(data []byte)
@@ -205,6 +206,8 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		}
 	}
 
+	w.plan.PictureMask.Bucket = captures["bucket"]
+
 	switch captures["g"] {
 	case "":
 		w.plan.Position = imagick.SouthEast
@@ -254,11 +257,10 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	if captures["image"] == "" {
 		w.plan.PictureMask.Image = ""
 	} else {
-		imageUrl, err := base64.URLEncoding.DecodeString(captures["image"])
+		w.plan.PictureMask.Image, err = ParseBase64String(captures["image"])
 		if err != nil {
 			return err
 		}
-		w.plan.PictureMask.Image = string(imageUrl)
 	}
 
 	if captures["text"] == "" {
@@ -267,21 +269,19 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		if len(captures["text"]) > 64 {
 			return ErrInvalidParameter
 		}
-		text, err := base64.URLEncoding.DecodeString(captures["text"])
+		w.plan.TextMask.Text, err = ParseBase64String(captures["text"])
 		if err != nil {
 			return err
 		}
-		w.plan.TextMask.Text = string(text)
 	}
 
 	if captures["type"] == "" {
 		w.plan.TextMask.Type = imagick.DefaultTextType
 	} else {
-		textType, err := base64.URLEncoding.DecodeString(captures["type"])
+		w.plan.TextMask.Type, err = ParseBase64String(captures["type"])
 		if err != nil {
 			return err
 		}
-		w.plan.TextMask.Type = string(textType)
 	}
 
 	w.plan.TextMask.Color = checkColor(captures["color"])
@@ -382,6 +382,10 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	w.img = imagick.NewImageWand()
 	defer w.img.Destory()
 	if w.plan.PictureMask.Image != "" {
+		if w.plan.PictureMask.Bucket != "" {
+			domain := strings.Split(w.domain, ".")
+			w.domain = UrlHead + w.plan.PictureMask.Bucket + w.domain[len(domain[0]):]
+		}
 		downloadUrl, operations, err := ParseUrl(w.domain + "/" + w.plan.PictureMask.Image)
 		if err != nil {
 			return nil, err

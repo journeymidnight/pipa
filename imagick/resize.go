@@ -34,7 +34,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 			o.Height = originHeight
 		}
 	}
-
+	helper.Log.Info("originWidth", originWidth, " originHeight", originHeight, " factor", factor)
 	if o.Zoom != Zoom {
 		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*o.Zoom), uint(float64(originHeight)*o.Zoom), Method)
 		if err != nil {
@@ -42,22 +42,22 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 			return err
 		}
 	} else if o.Crop == true {
-		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*factor), uint(float64(originHeight)*factor), Method)
+		err = img.MagickWand.ResizeImage(uint(math.Ceil(float64(originWidth)*factor)), uint(math.Ceil(float64(originHeight)*factor)), Method)
 		if err != nil {
 			helper.Log.Error("MagickWand resize image failed... err:", err)
 			return err
 		}
-		err = img.cropImage(o, int(float64(originWidth)*factor), int(float64(originHeight)*factor))
+		err = img.cropImage(o, int(math.Ceil(float64(originWidth)*factor)), int(math.Ceil(float64(originHeight)*factor)))
 		if err != nil {
 			return err
 		}
 	} else if o.Pad == true {
-		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*factor), uint(float64(originHeight)*factor), Method)
+		err = img.MagickWand.ResizeImage(uint(math.Ceil(float64(originWidth)*factor)), uint(math.Ceil(float64(originHeight)*factor)), Method)
 		if err != nil {
 			helper.Log.Error("MagickWand resize image failed... err:", err)
 			return err
 		}
-		err = img.extentImage(o, int(float64(originWidth)*factor), int(float64(originHeight)*factor))
+		err = img.extentImage(o, int(math.Ceil(float64(originWidth)*factor)), int(math.Ceil(float64(originHeight)*factor)))
 		if err != nil {
 			return err
 		}

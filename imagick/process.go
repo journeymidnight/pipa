@@ -32,6 +32,7 @@ type WatermarkPlan struct {
 }
 
 type WatermarkPicture struct {
+	Bucket string
 	Image  string
 	Data   []byte
 	Rotate RotatePlan
@@ -85,7 +86,7 @@ func NewImageWand() ImageWand {
 }
 
 func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
-	helper.Log.Info("start resize image, plan: ", )
+	helper.Log.Info("start resize image, plan: ", plan)
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
 		helper.Log.Error("read data failed", err)
@@ -133,6 +134,8 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	switch plan.Mode {
 	case "lfit":
 		adjustCropTask(plan, originWidth, originHeight)
+		o.Width = plan.Width
+		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -141,6 +144,8 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		break
 	case "mfit":
 		adjustCropTask(plan, originWidth, originHeight)
+		o.Width = plan.Width
+		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
 		err = img.resize(o)
 		if err != nil {
@@ -175,7 +180,7 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 }
 
 func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) error {
-	helper.Log.Info("start resize image, plan: ", )
+	helper.Log.Info("start resize image, plan: ", plan)
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
 		helper.Log.Error("read data failed", err)
