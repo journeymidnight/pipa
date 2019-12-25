@@ -28,6 +28,7 @@ const (
 	ErrInvalidParameterMode
 	ErrInvalidParameterProportion
 	ErrInvalidParameterBorder
+	ErrInvalidParametersHaveSpaces
 )
 
 type ErrorStruct struct {
@@ -134,7 +135,11 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	},
 	ErrInvalidParameterBorder: {
 		ErrorCode:    403,
-		ErrorMessage: "Invalid parameter: params for image border are wrong.",
+		ErrorMessage: "Invalid parameter: Parameters for image border are wrong.",
+	},
+	ErrInvalidParametersHaveSpaces: {
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Parameters have spaces.",
 	},
 }
 

@@ -93,6 +93,9 @@ func parseParam(param string) (operation Operation, err error) {
 func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) {
 	captures = make(map[string]string)
 	for _, param := range paramKeys {
+		if param == "" {
+			return captures,ErrInvalidParametersHaveSpaces
+		}
 		keys := strings.Split(param, "_")
 		if len(keys) > 2 {
 			return captures, ErrInvalidParameterFormat
