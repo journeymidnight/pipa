@@ -17,7 +17,7 @@ const (
 	YMargin      = 10
 	Transparency = 100
 	FrontSize    = 40.0
-	Background   = "#FFFFFF"
+	Background   = "#000000"
 )
 
 const (

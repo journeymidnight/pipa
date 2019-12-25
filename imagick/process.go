@@ -15,7 +15,7 @@ type ResizePlan struct {
 	Limit               bool
 	Color               string
 	WatermarkProportion int
-	Proportion     int
+	Proportion          int
 	Data                []byte
 }
 
@@ -244,7 +244,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 			w.XMargin = originWidth - plan.XMargin - wmWidth
 			w.YMargin = originHeight - plan.YMargin - wmHeight
 		}
-		helper.Log.Info("trans params ", w)
+		helper.Log.Info("trans params ", w, w.Picture)
 		err = img.watermark(w)
 		if err != nil {
 			return err
@@ -263,17 +263,17 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		case NorthWest:
 			w.Gravity = imagick.GRAVITY_NORTH_WEST
 			w.XMargin = plan.XMargin
-			w.YMargin = plan.YMargin + w.Text.fontSize
+			w.YMargin = plan.YMargin
 			break
 		case North:
 			w.Gravity = imagick.GRAVITY_NORTH
 			w.XMargin = 0
-			w.YMargin = plan.YMargin + w.Text.fontSize
+			w.YMargin = plan.YMargin
 			break
 		case NorthEast:
 			w.Gravity = imagick.GRAVITY_NORTH_EAST
 			w.XMargin = plan.XMargin
-			w.YMargin = plan.YMargin + w.Text.fontSize
+			w.YMargin = plan.YMargin
 			break
 		case West:
 			w.Gravity = imagick.GRAVITY_WEST
@@ -310,7 +310,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 			w.XMargin = plan.XMargin
 			w.YMargin = plan.YMargin
 		}
-		helper.Log.Info("trans params ", w)
+		helper.Log.Info("trans params ", w, w.Text)
 		err = img.watermark(w)
 		if err != nil {
 			helper.Log.Error()

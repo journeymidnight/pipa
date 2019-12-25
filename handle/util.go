@@ -11,12 +11,15 @@ import (
 const (
 	UrlHead      = "http://"
 	OssProcess   = "?x-oss-process=image/"
-	DefaultColor = "#FFFFFF"
+	DefaultColor = "#000000"
 )
 
 func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
+	if taskUrl[len(taskUrl)-1:] == "/" {
+		taskUrl= taskUrl[:len(taskUrl)-1]
+	}
 	urlFragments := strings.Split(taskUrl, "\u0026")
 
 	pos := strings.Index(urlFragments[0], OssProcess)
@@ -41,7 +44,6 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 	}
 
 	params := urlFragments[0][pos+len(OssProcess):]
-
 	for _, param := range strings.Split(params, "/") {
 		operation, err := parseParam(param)
 		if err != nil {
@@ -102,9 +104,9 @@ func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) 
 
 func checkColor(color string) string {
 	switch {
-	case strings.Contains(color, ","):
+	case strings.Contains(color, "-"):
 		rgb := []int{255, 255, 255}
-		colors := strings.Split(color, ",")
+		colors := strings.Split(color, "-")
 		for i, num := range colors {
 			n, err := strconv.Atoi(num)
 			if err != nil {

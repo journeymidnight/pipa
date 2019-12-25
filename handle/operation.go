@@ -50,7 +50,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.WatermarkProportion < 1 || r.plan.WatermarkProportion > 100 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterProportion
 		}
 	}
 
@@ -60,7 +60,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.Proportion < 1 || r.plan.Proportion > 1000 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterProportion
 		}
 	}
 
@@ -72,7 +72,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.Width < 1 || r.plan.Width > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterBorder
 		}
 	}
 
@@ -84,7 +84,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.Height < 1 || r.plan.Height > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterBorder
 		}
 	}
 
@@ -96,7 +96,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.Long < 1 || r.plan.Long > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterBorder
 		}
 	}
 
@@ -108,7 +108,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if r.plan.Short < 1 || r.plan.Short > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterBorder
 		}
 	}
 
@@ -123,14 +123,14 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 		} else if limit == 0 {
 			r.plan.Limit = false
 		} else {
-			return ErrInvalidParameter
+			return ErrInvalidParameterLimit
 		}
 	}
 
 	r.plan.Color = checkColor(captures["color"])
 
 	if ((r.plan.Width != 0 || r.plan.Height != 0) && (r.plan.Long != 0 || r.plan.Short != 0)) == true {
-		return ErrInvalidParameter
+		return ErrInvalidParameterBorder
 	}
 
 	switch captures["m"] {
@@ -147,7 +147,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 			r.plan.Width = r.plan.Height
 		}
 	default:
-		return ErrInvalidParameter
+		return ErrInvalidParameterMode
 	}
 	return nil
 }
@@ -198,7 +198,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	} else {
 		w.plan.Transparency, _ = strconv.Atoi(captures["t"])
 		if w.plan.Transparency < 0 || w.plan.Transparency > 100 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterTransparency
 		}
 	}
 
@@ -211,7 +211,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		imagick.East, imagick.SouthWest, imagick.South, imagick.SouthEast:
 		w.plan.Position = captures["g"]
 	default:
-		return ErrInvalidParameter
+		return ErrInvalidParameterPosition
 	}
 
 	if captures["x"] == "" {
@@ -222,7 +222,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if w.plan.XMargin < 0 || w.plan.XMargin > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterXMargin
 		}
 	}
 
@@ -234,7 +234,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if w.plan.YMargin < 0 || w.plan.YMargin > 4096 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterYMargin
 		}
 	}
 
@@ -246,7 +246,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if w.plan.Voffset < -1000 || w.plan.Voffset > 1000 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterVoffset
 		}
 	}
 
@@ -263,7 +263,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		w.plan.TextMask.Text = ""
 	} else {
 		if len(captures["text"]) > 64 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterText
 		}
 		w.plan.TextMask.Text, err = ParseBase64String(captures["text"])
 		if err != nil {
@@ -290,7 +290,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if w.plan.YMargin < 0 || w.plan.YMargin > 1000 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterTextSize
 		}
 	}
 
@@ -302,7 +302,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 			return err
 		}
 		if w.plan.TextMask.Rotate < 0 || w.plan.TextMask.Rotate > 360 {
-			return ErrInvalidParameter
+			return ErrInvalidParameterRotate
 		}
 	}
 
@@ -318,7 +318,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		} else if fill == 0 {
 			w.plan.TextMask.Fill = false
 		} else {
-			return ErrInvalidParameter
+			return ErrInvalidParameterFill
 		}
 	}
 

@@ -43,10 +43,11 @@ type TaskData struct {
 }
 
 type FinishedTask struct {
-	code int
-	uuid string
-	url  string
-	blob []byte
+	code          int
+	returnMessage string
+	uuid          string
+	url           string
+	blob          []byte
 }
 
 func StartWorker() {
@@ -112,7 +113,7 @@ func slave(slave_num int) {
 					break
 				}
 			}
-			ReturnQ <- FinishedTask{200, taskData.UUID, taskData.Url, data}
+			ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
 		}
 	}
 }
@@ -177,26 +178,30 @@ func listenFinishedTask(resultQ chan FinishedTask) {
 		if r.code == 200 {
 			c.Do("MULTI")
 			c.Do("SET", r.url, r.blob)
-			c.Do("LPUSH", r.uuid, r.code)
+			c.Do("LPUSH", r.uuid, r.returnMessage)
 			c.Do("EXEC")
 			r.blob = nil
 		} else {
-			c.Do("LPUSH", r.uuid, r.code)
+			c.Do("LPUSH", r.uuid, r.returnMessage)
 		}
-		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %d\n", r.uuid, r.url, r.code))
+		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", r.uuid, r.url, r.returnMessage))
 	}
 }
 
 func returnError(err error, t Task) {
-	var code int
+	var (
+		code    int
+		message string
+	)
 	e, ok := err.(PipaError)
 	if ok {
-		code = e.ErrorCode()
+		code, message = e.ErrorCode()
 	} else {
 		code = 400
 	}
 	helper.Log.Error(err)
-	result := FinishedTask{code, t.UUID, t.Url, nil}
+	returnMessage := strconv.Itoa(code) + "," + message
+	result := FinishedTask{code, returnMessage,t.UUID, t.Url, nil}
 	sendResult(result)
 }
 
