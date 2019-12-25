@@ -14,7 +14,7 @@ const (
 	DefaultColor = "#FFFFFF"
 )
 
-func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err error) {
+func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
 	urlFragments := strings.Split(taskUrl, "\u0026")
@@ -49,10 +49,11 @@ func ParseUrl(taskUrl string) (downloadUrl string, operations []Operation, err e
 		}
 		switch operation.GetType() {
 		case WATERMARK:
+			if isWatermark {
+				return "", operations, ErrWatermarkCanNotProcess
+			}
 			operation.SetDomain(host)
-			operation.SetSecondProcessFlag(true)
-		default:
-			operation.SetSecondProcessFlag(false)
+			operation.SetIsWatermark(true)
 		}
 		operations = append(operations, operation)
 	}
@@ -124,8 +125,8 @@ func checkColor(color string) string {
 
 func ParseBase64String(str string) (string, error) {
 	mod4String := len(str) % 4
-	equalSign := "===="
-	str += equalSign[4-mod4String:]
+	equalSign := []string{"", "===", "==", "="}
+	str += equalSign[mod4String]
 
 	data, err := base64.StdEncoding.DecodeString(strings.TrimSpace(str))
 	if err != nil {

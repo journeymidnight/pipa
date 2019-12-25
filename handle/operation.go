@@ -16,7 +16,7 @@ type Operation interface {
 	GetType() string
 	SetDomain(domain string)
 	//whether process watermark picture
-	SetSecondProcessFlag(flag bool)
+	SetIsWatermark(flag bool)
 	GetOption(captures map[string]string) (err error)
 	GetPictureData(data []byte)
 	DoProcess(data []byte) (result []byte, err error)
@@ -24,7 +24,7 @@ type Operation interface {
 }
 
 type Resize struct {
-	flag bool
+	isWatermark bool
 	img  imagick.ImageWand
 	plan imagick.ResizePlan
 }
@@ -37,28 +37,24 @@ func (r *Resize) SetDomain(domain string) {
 
 }
 
-func (r *Resize) SetSecondProcessFlag(flag bool) {
-	r.flag = flag
+func (r *Resize) SetIsWatermark(flag bool) {
+	r.isWatermark = flag
 }
 
 func (r *Resize) GetOption(captures map[string]string) (err error) {
-	if r.flag == true {
-		if captures["P"] == "" {
-			r.plan.Proportion = 0
-		} else {
-			r.plan.Proportion, err = strconv.Atoi(captures["P"])
-			if err != nil {
-				return err
-			}
-			if r.plan.Proportion < 1 || r.plan.Proportion > 100 {
-				return ErrInvalidParameter
-			}
+	if captures["P"] == "" {
+		r.plan.WatermarkProportion = 0
+	} else {
+		r.plan.WatermarkProportion, err = strconv.Atoi(captures["P"])
+		if err != nil {
+			return err
+		}
+		if r.plan.WatermarkProportion < 1 || r.plan.WatermarkProportion > 100 {
+			return ErrInvalidParameter
 		}
 	}
 
-	if captures["p"] == "" {
-		r.plan.Proportion = 0
-	} else {
+	if captures["p"] != "" {
 		r.plan.Proportion, err = strconv.Atoi(captures["p"])
 		if err != nil {
 			return err
@@ -175,10 +171,10 @@ func (r *Resize) Close() {
 }
 
 type Watermark struct {
-	domain string
-	flag   bool
-	img    imagick.ImageWand
-	plan   imagick.WatermarkPlan
+	domain      string
+	isWatermark bool
+	img         imagick.ImageWand
+	plan        imagick.WatermarkPlan
 }
 
 func (w *Watermark) GetType() string {
@@ -189,12 +185,12 @@ func (w *Watermark) SetDomain(domain string) {
 	w.domain = domain
 }
 
-func (w *Watermark) SetSecondProcessFlag(flag bool) {
-	w.flag = flag
+func (w *Watermark) SetIsWatermark(flag bool) {
+	w.isWatermark = flag
 }
 
 func (w *Watermark) GetOption(captures map[string]string) (err error) {
-	if w.flag == true {
+	if w.isWatermark == true {
 		return ErrInvalidWatermarkPicture
 	}
 	if captures["t"] == "" {
@@ -233,7 +229,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	if captures["y"] == "" {
 		w.plan.YMargin = 10
 	} else {
-		w.plan.YMargin, err = strconv.Atoi(captures["x"])
+		w.plan.YMargin, err = strconv.Atoi(captures["y"])
 		if err != nil {
 			return err
 		}
@@ -243,9 +239,9 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	}
 
 	if captures["voffset"] == "" {
-		w.plan.YMargin = 0
+		w.plan.Voffset = 0
 	} else {
-		w.plan.Voffset, err = strconv.Atoi(captures["x"])
+		w.plan.Voffset, err = strconv.Atoi(captures["voffset"])
 		if err != nil {
 			return err
 		}
@@ -386,7 +382,7 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 			domain := strings.Split(w.domain, ".")
 			w.domain = UrlHead + w.plan.PictureMask.Bucket + w.domain[len(domain[0]):]
 		}
-		downloadUrl, operations, err := ParseUrl(w.domain + "/" + w.plan.PictureMask.Image)
+		downloadUrl, operations, err := ParseUrl(w.domain+"/"+w.plan.PictureMask.Image, w.isWatermark)
 		if err != nil {
 			return nil, err
 		}

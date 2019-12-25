@@ -14,6 +14,7 @@ const (
 	ErrInvalidWatermarkProcess
 	ErrInvalidWatermarkPicture
 	ErrPictureWidthOrHeightTooLong
+	ErrWatermarkCanNotProcess
 )
 
 type ErrorStruct struct {
@@ -65,6 +66,10 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	ErrPictureWidthOrHeightTooLong: {
 		ErrorCode:    407,
 		ErrorMessage: "Picture Width or Height too long",
+	},
+	ErrWatermarkCanNotProcess: {
+		ErrorCode:    407,
+		ErrorMessage: "Watermark can not process",
 	},
 }
 

@@ -7,15 +7,16 @@ import (
 )
 
 type ResizePlan struct {
-	Mode       string
-	Width      int
-	Height     int
-	Long       int
-	Short      int
-	Limit      bool
-	Color      string
-	Proportion int
-	Data       []byte
+	Mode                string
+	Width               int
+	Height              int
+	Long                int
+	Short               int
+	Limit               bool
+	Color               string
+	WatermarkProportion int
+	Proportion     int
+	Data                []byte
 }
 
 type WatermarkPlan struct {
@@ -86,7 +87,6 @@ func NewImageWand() ImageWand {
 }
 
 func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
-	helper.Log.Info("start resize image, plan: ", plan)
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
 		helper.Log.Error("read data failed", err)
@@ -103,8 +103,8 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	o.Background = plan.Color
 
 	if plan.Data != nil {
-		if plan.Proportion != 0 {
-			factor, err := factorCalculations(img, plan.Data, float64(plan.Proportion))
+		if plan.WatermarkProportion != 0 {
+			factor, err := factorCalculations(img, plan.Data, float64(plan.WatermarkProportion))
 			if err != nil {
 				return err
 			}
@@ -133,7 +133,7 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	o.Height = plan.Height
 	switch plan.Mode {
 	case "lfit":
-		adjustCropTask(plan, originWidth, originHeight)
+		adjustCropTask(&plan, originWidth, originHeight)
 		o.Width = plan.Width
 		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
@@ -143,7 +143,7 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		}
 		break
 	case "mfit":
-		adjustCropTask(plan, originWidth, originHeight)
+		adjustCropTask(&plan, originWidth, originHeight)
 		o.Width = plan.Width
 		o.Height = plan.Height
 		helper.Log.Info("trans params ", o)
@@ -180,7 +180,6 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 }
 
 func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) error {
-	helper.Log.Info("start resize image, plan: ", plan)
 	err := img.MagickWand.ReadImageBlob(data)
 	if err != nil {
 		helper.Log.Error("read data failed", err)
@@ -255,7 +254,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		w.Text.text = plan.TextMask.Text
 		w.Transparency = plan.Transparency
 		w.Text.color = plan.TextMask.Color
-		w.Text.textType = selectTextType(plan.TextMask.Type)
+		w.Text.front = helper.DEFAULT_PIPA_FRONT_PATH + selectTextType(plan.TextMask.Type)
 		w.Text.fontSize = plan.TextMask.Size
 		w.Text.shadow = plan.TextMask.Shadow
 		w.Text.rotate = plan.TextMask.Rotate
@@ -264,17 +263,17 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		case NorthWest:
 			w.Gravity = imagick.GRAVITY_NORTH_WEST
 			w.XMargin = plan.XMargin
-			w.YMargin = plan.YMargin
+			w.YMargin = plan.YMargin + w.Text.fontSize
 			break
 		case North:
 			w.Gravity = imagick.GRAVITY_NORTH
 			w.XMargin = 0
-			w.YMargin = plan.YMargin
+			w.YMargin = plan.YMargin + w.Text.fontSize
 			break
 		case NorthEast:
 			w.Gravity = imagick.GRAVITY_NORTH_EAST
 			w.XMargin = plan.XMargin
-			w.YMargin = plan.YMargin
+			w.YMargin = plan.YMargin + w.Text.fontSize
 			break
 		case West:
 			w.Gravity = imagick.GRAVITY_WEST

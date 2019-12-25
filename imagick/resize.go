@@ -36,7 +36,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 	}
 	helper.Log.Info("originWidth", originWidth, " originHeight", originHeight, " factor", factor)
 	if o.Zoom != Zoom {
-		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*o.Zoom), uint(float64(originHeight)*o.Zoom), Method)
+		err = img.MagickWand.ResizeImage(uint(math.Ceil(float64(originWidth)*o.Zoom)), uint(math.Ceil(float64(originHeight)*o.Zoom)), Method)
 		if err != nil {
 			helper.Log.Error("MagickWand resize image failed... err:", err)
 			return err
@@ -68,7 +68,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 			return err
 		}
 	} else {
-		err = img.MagickWand.ResizeImage(uint(float64(originWidth)*factor), uint(float64(originHeight)*factor), Method)
+		err = img.MagickWand.ResizeImage(uint(math.Ceil(float64(originWidth)*factor)), uint(math.Ceil(float64(originHeight)*factor)), Method)
 		if err != nil {
 			helper.Log.Error("MagickWand resize image failed... err:", err)
 			return err
