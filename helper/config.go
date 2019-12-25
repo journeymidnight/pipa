@@ -8,7 +8,7 @@ import (
 var Config PipaConfig
 
 const (
-	DEFAULT_PIPA_CONF_PATH  = "pipa.toml"
+	DEFAULT_PIPA_CONF_PATH  = "/etc/pipa/pipa.toml"
 	DEFAULT_PIPA_FRONT_PATH = "/usr/share/fonts/Chinese_fonts/"
 )
 

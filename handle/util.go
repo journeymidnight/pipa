@@ -95,7 +95,7 @@ func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) 
 		if len(keys) > 2 {
 			return captures, ErrInvalidParameterFormat
 		}
-		captures[keys[0]] = keys[1]
+		captures[keys[0]] = param[len(keys[0])+1:]
 	}
 	return captures, nil
 }
@@ -124,6 +124,8 @@ func checkColor(color string) string {
 }
 
 func ParseBase64String(str string) (string, error) {
+	str = strings.Replace(str, "_", "/", -1)
+	str = strings.Replace(str, "-", "+", -1)
 	mod4String := len(str) % 4
 	equalSign := []string{"", "===", "==", "="}
 	str += equalSign[mod4String]

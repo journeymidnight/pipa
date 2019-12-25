@@ -28,7 +28,7 @@ func (img *ImageWand) resize(o *Resize) (err error) {
 	helper.Log.Info("resize factor: ", factor)
 
 	if o.Limit && !o.Force {
-		if originWidth < o.Width && originHeight < o.Height {
+		if originWidth < o.Width || originHeight < o.Height {
 			factor = 1.0
 			o.Width = originWidth
 			o.Height = originHeight
