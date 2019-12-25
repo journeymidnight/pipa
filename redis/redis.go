@@ -27,7 +27,6 @@ func Initialize() {
 			if err != nil {
 				return nil, err
 			}
-			helper.Log.Info("redis connect success!")
 			return c, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
