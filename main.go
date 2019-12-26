@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"github.com/journeymidnight/pipa/handler"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/journeymidnight/pipa/handle"
 	"github.com/journeymidnight/pipa/helper"
 	"github.com/journeymidnight/pipa/redis"
 )
@@ -21,7 +22,7 @@ func main() {
 	redis.Initialize()
 	defer redis.Close()
 
-	handle.StartWorker()
+	go handler.StartWorker()
 
 	signal.Ignore()
 	signalQueue := make(chan os.Signal)
@@ -35,7 +36,7 @@ func main() {
 			// TODO: Dump something?
 		default:
 			// TODO: Stop pipa server with graceful shutdown
-			helper.Log.Info("Pipa stop!")
+			handler.Stop()
 			return
 		}
 	}

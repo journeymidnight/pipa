@@ -1,4 +1,4 @@
-package handle
+package handler
 
 import (
 	"encoding/json"
@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -21,6 +22,7 @@ const PictureMAxSize = 20 << 20
 var (
 	TaskQ   chan string
 	ReturnQ chan FinishedTask
+	wg      sync.WaitGroup
 )
 
 type Task struct {
@@ -59,7 +61,6 @@ func StartWorker() {
 	}
 	go listenFinishedTask(ReturnQ)
 
-	defer close(TaskQ)
 	for {
 		t, err := receiveImageTask()
 		if err != nil {
@@ -79,10 +80,14 @@ func receiveImageTask() (string, error) {
 }
 
 func slave(slave_num int) {
-	defer close(ReturnQ)
 	for {
+		wg.Add(1)
 		select {
-		case task := <-TaskQ:
+		case task,ok := <-TaskQ:
+			if !ok {
+				wg.Done()
+				return
+			}
 			helper.Log.Info("slave", slave_num, "receive task:", task)
 			lib := NewLibrary()
 
@@ -114,6 +119,7 @@ func slave(slave_num int) {
 				}
 			}
 			ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+			wg.Done()
 		}
 	}
 }
@@ -201,10 +207,17 @@ func returnError(err error, t Task) {
 	}
 	helper.Log.Error(err)
 	returnMessage := strconv.Itoa(code) + "," + message
-	result := FinishedTask{code, returnMessage,t.UUID, t.Url, nil}
+	result := FinishedTask{code, returnMessage, t.UUID, t.Url, nil}
 	sendResult(result)
 }
 
 func sendResult(t FinishedTask) {
 	ReturnQ <- t
+}
+
+func Stop() {
+	close(TaskQ)
+	wg.Wait()
+	close(ReturnQ)
+	helper.Log.Info("Pipa stop")
 }

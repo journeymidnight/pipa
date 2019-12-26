@@ -1,4 +1,4 @@
-package handle
+package handler
 
 import (
 	. "github.com/journeymidnight/pipa/error"
