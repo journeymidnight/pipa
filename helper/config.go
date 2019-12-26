@@ -13,10 +13,11 @@ const (
 )
 
 type PipaConfig struct {
-	LogLevel      string `toml:"log_level"`
-	LogPath       string `toml:"log_path"`
-	WorkersNumber int    `toml:"workers_number"`
-	MaxTaskNumber int    `toml:"max_task_number"`
+	S3Domain      []string `toml:"s3domain"`
+	LogLevel      string   `toml:"log_level"`
+	LogPath       string   `toml:"log_path"`
+	WorkersNumber int      `toml:"workers_number"`
+	MaxTaskNumber int      `toml:"max_task_number"`
 
 	RedisAddress         string `toml:"redis_address"`  // redis connection string, e.g localhost:1234
 	RedisPassword        string `toml:"redis_password"` // redis auth password
@@ -40,6 +41,7 @@ func SetupGlobalConfig() {
 		panic("load pipa.toml error: " + err.Error())
 	}
 
+	Config.S3Domain = c.S3Domain
 	Config.LogLevel = c.LogLevel
 	Config.LogPath = c.LogPath
 	Config.WorkersNumber = c.WorkersNumber

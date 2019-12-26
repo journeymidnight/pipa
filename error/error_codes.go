@@ -5,6 +5,7 @@ type PipaError int
 const (
 	Ok PipaError = iota
 	ErrInvalidTaskString
+	ErrIsNotBucketDomain
 	ErrDownloadCode
 	StatusRequestEntityTooLarge
 	StatusUnsupportedMediaType
@@ -49,6 +50,10 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    401,
 		ErrorMessage: "Download response code is not 200",
 	},
+	ErrIsNotBucketDomain:{
+		ErrorCode:    402,
+		ErrorMessage: "Picture is not bucket domain",
+	},
 	StatusRequestEntityTooLarge: {
 		ErrorCode:    413,
 		ErrorMessage: "Picture too large",
@@ -58,7 +63,7 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorMessage: "Unsupported Media Type",
 	},
 	ErrNotFoundOssProcess: {
-		ErrorCode:    402,
+		ErrorCode:    403,
 		ErrorMessage: "Can not parameter x-oss-process.",
 	},
 	ErrInvalidParameter: {
@@ -66,11 +71,11 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorMessage: "Invalid parameter: param operation type wrong",
 	},
 	ErrInvalidParameterFormat: {
-		ErrorCode:    405,
+		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter format.",
 	},
 	ErrInvalidWatermarkProcess: {
-		ErrorCode:    406,
+		ErrorCode:    407,
 		ErrorMessage: "Invalid watermark parameter.",
 	},
 	ErrInvalidWatermarkPicture: {
@@ -78,11 +83,11 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorMessage: "Invalid watermark picture.",
 	},
 	ErrPictureWidthOrHeightTooLong: {
-		ErrorCode:    407,
+		ErrorCode:    406,
 		ErrorMessage: "Picture Width or Height too long",
 	},
 	ErrWatermarkCanNotProcess: {
-		ErrorCode:    407,
+		ErrorCode:    405,
 		ErrorMessage: "Watermark can not process",
 	},
 	ErrInvalidParameterTransparency: {

@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/base64"
 	. "github.com/journeymidnight/pipa/error"
+	"github.com/journeymidnight/pipa/helper"
 	"net/url"
 	"strconv"
 	"strings"
@@ -17,9 +18,6 @@ const (
 func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
-	if taskUrl[len(taskUrl)-1:] == "/" {
-		taskUrl= taskUrl[:len(taskUrl)-1]
-	}
 	urlFragments := strings.Split(taskUrl, "\u0026")
 
 	pos := strings.Index(urlFragments[0], OssProcess)
@@ -30,6 +28,10 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 	path, err := url.Parse(urlFragments[0])
 	if err != nil {
 		return "", operations, err
+	}
+	isBucketDomain, _ := HasBucketInDomain(path.Hostname(), ".", helper.Config.S3Domain)
+	if !isBucketDomain {
+		return "", operations, ErrIsNotBucketDomain
 	}
 	//path.Hostname():*.s3.test.com
 	host := UrlHead + path.Hostname()
@@ -94,12 +96,12 @@ func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) 
 	captures = make(map[string]string)
 	for _, param := range paramKeys {
 		if param == "" {
-			return captures,ErrInvalidParametersHaveSpaces
+			return captures, ErrInvalidParametersHaveSpaces
 		}
 		keys := strings.Split(param, "_")
-		if len(keys) > 2 {
-			return captures, ErrInvalidParameterFormat
-		}
+		//if len(keys) > 2 {
+		//	return captures, ErrInvalidParameterFormat
+		//}
 		captures[keys[0]] = param[len(keys[0])+1:]
 	}
 	return captures, nil
@@ -140,4 +142,13 @@ func ParseBase64String(str string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func HasBucketInDomain(host string, prefix string, domains []string) (ok bool, bucket string) {
+	for _, d := range domains {
+		if strings.HasSuffix(host, prefix+d) {
+			return true, strings.TrimSuffix(host, prefix+d)
+		}
+	}
+	return false, ""
 }
