@@ -1,19 +1,28 @@
-package pipa
+package handler
 
 import (
-	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/redis"
-	"fmt"
 	"encoding/json"
-	. "github.com/journeymidnight/pipa/library"
+	"fmt"
 	. "github.com/journeymidnight/pipa/error"
+	"github.com/journeymidnight/pipa/helper"
+	. "github.com/journeymidnight/pipa/library"
+	"github.com/journeymidnight/pipa/redis"
+	"io/ioutil"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 const TaskQueue = "taskQueue"
+const PictureMAxSize = 20 << 20
 
 var (
 	TaskQ   chan string
 	ReturnQ chan FinishedTask
+	wg      sync.WaitGroup
 )
 
 type Task struct {
@@ -36,11 +45,11 @@ type TaskData struct {
 }
 
 type FinishedTask struct {
-	code int
-	uuid string
-	url  string
-	blob []byte
-	mime string
+	code          int
+	returnMessage string
+	uuid          string
+	url           string
+	blob          []byte
 }
 
 func StartWorker() {
@@ -52,11 +61,9 @@ func StartWorker() {
 	}
 	go listenFinishedTask(ReturnQ)
 
-	//TODO: Use signal channel to quit
 	for {
 		t, err := receiveImageTask()
 		if err != nil {
-			helper.Log.Error("receive image task error:", err)
 			continue
 		}
 		helper.Log.Info("receive image task:", t)
@@ -74,8 +81,13 @@ func receiveImageTask() (string, error) {
 
 func slave(slave_num int) {
 	for {
+		wg.Add(1)
 		select {
-		case task := <-TaskQ:
+		case task,ok := <-TaskQ:
+			if !ok {
+				wg.Done()
+				return
+			}
 			helper.Log.Info("slave", slave_num, "receive task:", task)
 			lib := NewLibrary()
 
@@ -92,8 +104,7 @@ func slave(slave_num int) {
 				continue
 			}
 
-			//TODO: Download Origin Image
-			data, err := downloadImage(taskData.Url)
+			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
 				returnError(err, taskData)
 				continue
@@ -107,22 +118,61 @@ func slave(slave_num int) {
 					break
 				}
 			}
+			ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+			wg.Done()
 		}
 	}
 }
 
 func downloadImage(downloadUrl string) ([]byte, error) {
-	return nil, nil
+	helper.Log.Info(fmt.Sprintf("Start to download %s\n", downloadUrl))
+
+	httpClient := &http.Client{Timeout: time.Second * 5}
+	resp, err := httpClient.Get(downloadUrl)
+
+	if err != nil {
+		helper.Log.Error("Download failed!", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	//check header
+	if resp.StatusCode != 200 {
+		helper.Log.Info("Request is not 200")
+		return nil, ErrDownloadCode
+	}
+
+	mimeType := resp.Header.Get("Content-Type")
+
+	if strings.Contains(mimeType, "image") == false {
+		if ok, _ := regexp.MatchString("(jpeg|jpg|png|gif|bmp|webp|tiff)", downloadUrl); ok == false {
+			helper.Log.Info(fmt.Sprintf("MIME TYPE is %s not an image\n", mimeType))
+			return nil, StatusUnsupportedMediaType //415
+		}
+	}
+	contentLength := resp.Header.Get("Content-Length")
+	if len, _ := strconv.Atoi(contentLength); len > PictureMAxSize {
+		return nil, StatusRequestEntityTooLarge
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
-	// TODO: parse Url by using url.Parse(), return operations and error
-	// url.Parse(taskData.Url)
-	// get downloadUrl, Operations.
+	downloadUrl, operations, err := ParseUrl(taskData.Url, false)
+	if err != nil {
+		return ImageProcessTask{}, err
+	}
+
 	return ImageProcessTask{
-		lib: lib,
-		ops:,
-		downloadUrl:,
+		lib:         lib,
+		ops:         operations,
+		downloadUrl: downloadUrl,
 	}, nil
 }
 
@@ -132,32 +182,42 @@ func listenFinishedTask(resultQ chan FinishedTask) {
 	for r := range resultQ {
 		//put data back to redis
 		if r.code == 200 {
-			//combined := combineData(r.blob, r.mime)
 			c.Do("MULTI")
 			c.Do("SET", r.url, r.blob)
-			c.Do("LPUSH", r.uuid, r.code)
+			c.Do("LPUSH", r.uuid, r.returnMessage)
 			c.Do("EXEC")
 			r.blob = nil
 		} else {
-			c.Do("LPUSH", r.uuid, r.code)
+			c.Do("LPUSH", r.uuid, r.returnMessage)
 		}
-		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %d\n", r.uuid, r.url, r.code))
+		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", r.uuid, r.url, r.returnMessage))
 	}
 }
 
 func returnError(err error, t Task) {
-	var code int
+	var (
+		code    int
+		message string
+	)
 	e, ok := err.(PipaError)
 	if ok {
-		code = e.ErrorCode()
+		code, message = e.ErrorCode()
 	} else {
 		code = 400
 	}
 	helper.Log.Error(err)
-	result := FinishedTask{code, t.UUID, t.Url, nil, ""}
+	returnMessage := strconv.Itoa(code) + "," + message
+	result := FinishedTask{code, returnMessage, t.UUID, t.Url, nil}
 	sendResult(result)
 }
 
 func sendResult(t FinishedTask) {
 	ReturnQ <- t
+}
+
+func Stop() {
+	close(TaskQ)
+	wg.Wait()
+	close(ReturnQ)
+	helper.Log.Info("Pipa stop")
 }
