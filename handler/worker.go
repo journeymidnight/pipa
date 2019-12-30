@@ -81,13 +81,12 @@ func receiveImageTask() (string, error) {
 
 func slave(slave_num int) {
 	for {
-		wg.Add(1)
 		select {
-		case task,ok := <-TaskQ:
+		case task, ok := <-TaskQ:
 			if !ok {
-				wg.Done()
 				return
 			}
+			wg.Add(1)
 			helper.Log.Info("slave", slave_num, "receive task:", task)
 			lib := NewLibrary()
 
@@ -95,18 +94,21 @@ func slave(slave_num int) {
 			err := json.Unmarshal([]byte(task), &taskData)
 			if err != nil {
 				returnError(ErrInvalidTaskString, Task{})
+				wg.Done()
 				continue
 			}
 
 			imgTask, err := NewImageProcessTask(lib, taskData)
 			if err != nil {
 				returnError(err, taskData)
+				wg.Done()
 				continue
 			}
 
 			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
-				returnError(err, taskData)
+				returnError(ErrPictureDoanloadFailed, taskData)
+				wg.Done()
 				continue
 			}
 
@@ -118,7 +120,9 @@ func slave(slave_num int) {
 					break
 				}
 			}
-			ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+			if err == nil {
+				ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+			}
 			wg.Done()
 		}
 	}
@@ -182,13 +186,28 @@ func listenFinishedTask(resultQ chan FinishedTask) {
 	for r := range resultQ {
 		//put data back to redis
 		if r.code == 200 {
-			c.Do("MULTI")
-			c.Do("SET", r.url, r.blob)
-			c.Do("LPUSH", r.uuid, r.returnMessage)
-			c.Do("EXEC")
+			_, err := c.Do("MULTI")
+			if err != nil {
+				helper.Log.Error("MULTI do err:", err)
+			}
+			_, err = c.Do("SET", r.url, r.blob)
+			if err != nil {
+				helper.Log.Error("SET do err:", err)
+			}
+			_, err = c.Do("LPUSH", r.uuid, r.returnMessage)
+			if err != nil {
+				helper.Log.Error("LPUSH do err:", err)
+			}
+			_, err = c.Do("EXEC")
+			if err != nil {
+				helper.Log.Error("EXEC do err:", err)
+			}
 			r.blob = nil
 		} else {
-			c.Do("LPUSH", r.uuid, r.returnMessage)
+			_, err := c.Do("LPUSH", r.uuid, r.returnMessage)
+			if err != nil {
+				helper.Log.Error("EXEC do err:", err)
+			}
 		}
 		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", r.uuid, r.url, r.returnMessage))
 	}

@@ -30,6 +30,8 @@ const (
 	ErrInvalidParameterProportion
 	ErrInvalidParameterBorder
 	ErrInvalidParametersHaveSpaces
+	ErrPictureDoanloadFailed
+	ErrWatermarkPictureDoanloadFailed
 )
 
 type ErrorStruct struct {
@@ -145,6 +147,14 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	ErrInvalidParametersHaveSpaces: {
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: Parameters have spaces.",
+	},
+	ErrPictureDoanloadFailed:{
+		ErrorCode:    410,
+		ErrorMessage: "Picture download failed!.",
+	},
+	ErrWatermarkPictureDoanloadFailed:{
+		ErrorCode:    410,
+		ErrorMessage: "Watermark picture download failed!.",
 	},
 }
 

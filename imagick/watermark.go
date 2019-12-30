@@ -10,7 +10,7 @@ type Watermark struct {
 	XMargin      int
 	YMargin      int
 	Gravity      imagick.GravityType
-	Transparency int
+	Transparency float64
 	Picture      *imagick.MagickWand
 	Text         *Text
 }
@@ -41,6 +41,7 @@ func (img *ImageWand) watermark(o Watermark) (err error) {
 		img.PixelWand.SetColor(o.Text.color)
 		img.DrawWand.SetFillColor(img.PixelWand)
 
+		img.DrawWand.SetFillOpacity(o.Transparency)
 		err = img.DrawWand.SetFont(o.Text.front)
 		if err != nil {
 			return err

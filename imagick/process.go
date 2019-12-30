@@ -202,7 +202,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		wmHeight := int(picture.GetImageHeight())
 
 		w.Picture = picture
-		w.Transparency = plan.Transparency
+		w.Transparency = float64(plan.Transparency) / 100.0
 		switch plan.Position {
 		case NorthWest:
 			w.XMargin = plan.XMargin
@@ -252,7 +252,7 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 		return nil
 	} else if plan.TextMask.Text != "" {
 		w.Text.text = plan.TextMask.Text
-		w.Transparency = plan.Transparency
+		w.Transparency = float64(plan.Transparency) / 100.0
 		w.Text.color = plan.TextMask.Color
 		w.Text.front = helper.DEFAULT_PIPA_FRONT_PATH + selectTextType(plan.TextMask.Type)
 		w.Text.fontSize = plan.TextMask.Size

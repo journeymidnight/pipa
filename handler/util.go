@@ -18,10 +18,17 @@ const (
 func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
 
+	if taskUrl[len(taskUrl)-1:] == "/" {
+		taskUrl = taskUrl[:len(taskUrl)-1]
+	}
+
 	urlFragments := strings.Split(taskUrl, "\u0026")
 
 	pos := strings.Index(urlFragments[0], OssProcess)
 	if pos == -1 {
+		if isWatermark {
+			return taskUrl, operations, nil
+		}
 		return "", operations, ErrNotFoundOssProcess
 	}
 
@@ -131,13 +138,14 @@ func checkColor(color string) string {
 }
 
 func ParseBase64String(str string) (string, error) {
-	str = strings.Replace(str, "_", "/", -1)
-	str = strings.Replace(str, "-", "+", -1)
+	//str = strings.Replace(str, "_", "/", -1)
+	//str = strings.Replace(str, "-", "+", -1)
 	mod4String := len(str) % 4
 	equalSign := []string{"", "===", "==", "="}
 	str += equalSign[mod4String]
 
-	data, err := base64.StdEncoding.DecodeString(strings.TrimSpace(str))
+	//data, err := base64.StdEncoding.DecodeString(strings.TrimSpace(str))
+	data, err := base64.URLEncoding.DecodeString(strings.TrimSpace(str))
 	if err != nil {
 		return "", err
 	}

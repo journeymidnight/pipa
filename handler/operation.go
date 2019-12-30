@@ -384,7 +384,7 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 		}
 		downloadUrl, operations, err := ParseUrl(w.domain+"/"+w.plan.PictureMask.Image, w.isWatermark)
 		if err != nil {
-			return nil, err
+			return nil, ErrWatermarkPictureDoanloadFailed
 		}
 
 		w.plan.PictureMask.Data, err = downloadImage(downloadUrl)
