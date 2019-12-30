@@ -4,7 +4,9 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-const GRAVITY = imagick.GRAVITY_SOUTH_EAST
+const DdfaultGravity = imagick.GRAVITY_SOUTH_EAST
+const AlphaOpaque =  imagick.ALPHA_CHANNEL_UNDEFINED
+const EvaluateOperator = imagick.EVAL_OP_MULTIPLY
 
 type Watermark struct {
 	XMargin      int
@@ -27,11 +29,21 @@ type Text struct {
 }
 
 func newWatermark() Watermark {
-	return Watermark{XMargin, YMargin, GRAVITY, Transparency, nil, new(Text)}
+	return Watermark{XMargin, YMargin, DdfaultGravity, Transparency, nil, new(Text)}
 }
 
 func (img *ImageWand) watermark(o Watermark) (err error) {
 	if o.Picture != nil {
+		err = o.Picture.SetImageAlphaChannel(AlphaOpaque)
+		if err != nil {
+			return err
+		}
+		err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
+
+		if err != nil {
+			return err
+		}
+
 		err = img.MagickWand.CompositeImage(o.Picture, o.Picture.GetImageCompose(), true, o.XMargin, o.YMargin)
 		if err != nil {
 			return err
