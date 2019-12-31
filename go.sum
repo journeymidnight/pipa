@@ -1,0 +1,6 @@
+github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
+github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/garyburd/redigo v1.6.0 h1:0VruCpn7yAIIu7pWVClQC8wxCJEcG3nyzpMSHKi1PQc=
+github.com/garyburd/redigo v1.6.0/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
+gopkg.in/gographics/imagick.v3 v3.2.0 h1:eUwlkCw2fa20OGu47G39Im8c50S9n/CVkh8PwtOKExA=
+gopkg.in/gographics/imagick.v3 v3.2.0/go.mod h1:HbW83cYCl1jftZi3B/VZpVqsuNi4vW7qUrghjxBiT+8=

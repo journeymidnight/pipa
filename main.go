@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/journeymidnight/pipa/handler"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/pipa"
 	"github.com/journeymidnight/pipa/redis"
 )
 
@@ -17,10 +17,11 @@ func main() {
 	helper.Log = helper.NewFileLogger(helper.Config.LogPath, logLevel)
 	defer helper.Log.Close()
 
+	helper.Log.Info("Pipa start!")
 	redis.Initialize()
 	defer redis.Close()
 
-	pipa.StartWorker()
+	go handler.StartWorker()
 
 	signal.Ignore()
 	signalQueue := make(chan os.Signal)
@@ -29,12 +30,12 @@ func main() {
 		s := <-signalQueue
 		switch s {
 		case syscall.SIGHUP:
-			// TODO: Reload Service?
+			helper.SetupGlobalConfig()
 		case syscall.SIGUSR1:
 			// TODO: Dump something?
 		default:
 			// TODO: Stop pipa server with graceful shutdown
-
+			handler.Stop()
 			return
 		}
 	}
