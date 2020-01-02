@@ -11,9 +11,9 @@ const EvaluateOperator = imagick.EVAL_OP_MULTIPLY
 type Watermark struct {
 	XMargin      int
 	YMargin      int
-	Gravity      imagick.GravityType
+	Gravity      imagick.GravityType	//used to set putting watermark form where
 	Transparency float64
-	Picture      *imagick.MagickWand
+	Picture      *imagick.MagickWand	//watermark is picture
 	Text         *Text
 }
 
@@ -29,7 +29,7 @@ type Text struct {
 }
 
 func newWatermark() Watermark {
-	return Watermark{XMargin, YMargin, DdfaultGravity, Transparency, nil, new(Text)}
+	return Watermark{DefaultXMargin, DefaultYMargin, DdfaultGravity, DefaultTransparency, nil, new(Text)}
 }
 
 func (img *ImageWand) watermark(o Watermark) (err error) {

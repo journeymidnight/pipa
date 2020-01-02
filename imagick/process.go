@@ -94,12 +94,12 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 	}
 	originWidth := int(img.MagickWand.GetImageWidth())
 	originHeight := int(img.MagickWand.GetImageHeight())
-	if originHeight > 30000 || originWidth > 30000 {
-		return ErrPictureWidthOrHeightTooLong
+	if err = originPictureIsIllegal(originWidth, originHeight); err != nil {
+		return err
 	}
 
 	o := newResize()
-	o.Limit = plan.Limit
+	o.LimitEnlargement = plan.Limit
 	o.Background = plan.Color
 
 	if plan.Data != nil {
@@ -187,8 +187,8 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 	}
 	originWidth := int(img.MagickWand.GetImageWidth())
 	originHeight := int(img.MagickWand.GetImageHeight())
-	if originHeight > 30000 || originWidth > 30000 {
-		return ErrPictureWidthOrHeightTooLong
+	if err = originPictureIsIllegal(originWidth, originHeight); err != nil {
+		return err
 	}
 	w := newWatermark()
 	if plan.PictureMask.Image != "" {

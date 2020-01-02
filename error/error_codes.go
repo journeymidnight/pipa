@@ -15,6 +15,7 @@ const (
 	ErrInvalidWatermarkProcess
 	ErrInvalidWatermarkPicture
 	ErrPictureWidthOrHeightTooLong
+	ErrPictureWidthOrHeightIsZero
 	ErrWatermarkCanNotProcess
 	ErrInvalidParameterTransparency
 	ErrInvalidParameterPosition
@@ -87,6 +88,10 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	ErrPictureWidthOrHeightTooLong: {
 		ErrorCode:    406,
 		ErrorMessage: "Picture Width or Height too long",
+	},
+	ErrPictureWidthOrHeightIsZero: {
+		ErrorCode:    406,
+		ErrorMessage: "Picture Width or Height is zero",
 	},
 	ErrWatermarkCanNotProcess: {
 		ErrorCode:    405,

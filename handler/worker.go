@@ -131,7 +131,7 @@ func slave(slave_num int) {
 func downloadImage(downloadUrl string) ([]byte, error) {
 	helper.Log.Info(fmt.Sprintf("Start to download %s\n", downloadUrl))
 
-	httpClient := &http.Client{Timeout: time.Second * 5}
+	httpClient := &http.Client{Timeout: time.Second * 30}
 	resp, err := httpClient.Get(downloadUrl)
 
 	if err != nil {
@@ -192,10 +192,12 @@ func listenFinishedTask(resultQ chan FinishedTask) {
 			}
 			_, err = c.Do("SET", r.url, r.blob)
 			if err != nil {
+				c.Do("DISCARD")
 				helper.Log.Error("SET do err:", err)
 			}
 			_, err = c.Do("LPUSH", r.uuid, r.returnMessage)
 			if err != nil {
+				c.Do("DISCARD")
 				helper.Log.Error("LPUSH do err:", err)
 			}
 			_, err = c.Do("EXEC")
