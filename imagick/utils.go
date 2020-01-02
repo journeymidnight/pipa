@@ -1,23 +1,24 @@
 package imagick
 
 import (
+	. "github.com/journeymidnight/pipa/error"
 	"github.com/journeymidnight/pipa/helper"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
 const (
 	//Resize default param
-	Zoom       = 0.0
-	Force      = false
-	Crop       = false
-	Pad        = false
-	Limit      = true
+	ZoomIsZero         = 0.0
+	IsNotForce         = false
+	IsNotCrop          = false
+	IsNotPad           = false
+	IsLimitEnlargement = true
 	//Watermark default param
-	XMargin      = 10
-	YMargin      = 10
-	Transparency = 100
-	FrontSize    = 40.0
-	Background   = "#000000"
+	DefaultXMargin      = 10
+	DefaultYMargin      = 10
+	DefaultTransparency = 100
+	DefaultFrontSize    = 40.0
+	DefaultBackground   = "#000000"
 )
 
 const (
@@ -161,4 +162,14 @@ func selectTextType(tType string) string {
 	default:
 		return "WQYZH.ttf"
 	}
+}
+
+func originPictureIsIllegal(originWidth, originHeight int) error {
+	if originHeight > 30000 || originWidth > 30000 {
+		return ErrPictureWidthOrHeightTooLong
+	}
+	if originHeight <= 0 || originWidth <= 0 {
+		return ErrPictureWidthOrHeightIsZero
+	}
+	return nil
 }

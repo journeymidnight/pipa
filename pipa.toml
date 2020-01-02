@@ -6,8 +6,8 @@ max_task_number = 10000
 
 redis_address = "redis:6379"
 redis_password = "hehehehe"
-redis_connect_timeout = 1
-redis_read_timeout = 1
-redis_write_timeout = 1
+redis_connect_timeout = 5
+redis_read_timeout = 5
+redis_write_timeout = 5
 redis_pool_max_idle = 300
 redis_pool_idle_timeout = 30

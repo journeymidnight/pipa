@@ -4,14 +4,16 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-const GRAVITY = imagick.GRAVITY_SOUTH_EAST
+const DdfaultGravity = imagick.GRAVITY_SOUTH_EAST
+const AlphaOpaque =  imagick.ALPHA_CHANNEL_UNDEFINED
+const EvaluateOperator = imagick.EVAL_OP_MULTIPLY
 
 type Watermark struct {
 	XMargin      int
 	YMargin      int
-	Gravity      imagick.GravityType
-	Transparency int
-	Picture      *imagick.MagickWand
+	Gravity      imagick.GravityType	//used to set putting watermark form where
+	Transparency float64
+	Picture      *imagick.MagickWand	//watermark is picture
 	Text         *Text
 }
 
@@ -27,11 +29,21 @@ type Text struct {
 }
 
 func newWatermark() Watermark {
-	return Watermark{XMargin, YMargin, GRAVITY, Transparency, nil, new(Text)}
+	return Watermark{DefaultXMargin, DefaultYMargin, DdfaultGravity, DefaultTransparency, nil, new(Text)}
 }
 
 func (img *ImageWand) watermark(o Watermark) (err error) {
 	if o.Picture != nil {
+		err = o.Picture.SetImageAlphaChannel(AlphaOpaque)
+		if err != nil {
+			return err
+		}
+		err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
+
+		if err != nil {
+			return err
+		}
+
 		err = img.MagickWand.CompositeImage(o.Picture, o.Picture.GetImageCompose(), true, o.XMargin, o.YMargin)
 		if err != nil {
 			return err
@@ -41,6 +53,7 @@ func (img *ImageWand) watermark(o Watermark) (err error) {
 		img.PixelWand.SetColor(o.Text.color)
 		img.DrawWand.SetFillColor(img.PixelWand)
 
+		img.DrawWand.SetFillOpacity(o.Transparency)
 		err = img.DrawWand.SetFont(o.Text.front)
 		if err != nil {
 			return err

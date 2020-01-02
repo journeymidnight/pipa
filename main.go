@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/journeymidnight/pipa/handler"
 	"os"
 	"os/signal"
