@@ -82,14 +82,14 @@ func parseParam(param string) (operation Operation, err error) {
 	switch paramKeys[0] {
 	case RESIZE:
 		operation = &Resize{}
-		err = operation.GetOption(captures)
+		err = operation.SetOption(captures)
 		if err != nil {
 			return operation, err
 		}
 		return operation, nil
 	case WATERMARK:
 		operation = &Watermark{}
-		err = operation.GetOption(captures)
+		err = operation.SetOption(captures)
 		if err != nil {
 			return operation, err
 		}
