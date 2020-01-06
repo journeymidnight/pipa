@@ -19,7 +19,10 @@ import (
 const TaskQueue = "taskQueue"
 const PictureMAxSize = 20 << 20
 
-var wg sync.WaitGroup
+var (
+	finishPipa chan bool
+	wg         sync.WaitGroup
+)
 
 type Task struct {
 	UUID string `json:"uuid"`
@@ -49,6 +52,8 @@ type FinishedTask struct {
 }
 
 func StartWorker() {
+	finishPipa = make(chan bool)
+
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		go slave(i)
 	}
@@ -63,53 +68,58 @@ func receiveImageTask() (string, error) {
 }
 
 func slave(slave_num int) {
+	lib := NewLibrary()
+	defer CloseLibrary()
 	for {
-		wg.Add(1)
+		select {
+		case <-finishPipa:
+			helper.Log.Info("stop slave:", slave_num)
+			return
+		default:
+			wg.Add(1)
+			task, err := receiveImageTask()
+			if err != nil || len(task) == 0 {
+				wg.Done()
+				continue
+			}
 
-		task, err := receiveImageTask()
-		if err != nil || len(task) == 0 {
-			wg.Done()
-			continue
-		}
+			helper.Log.Info("slave", slave_num, "receive task:", task)
 
-		helper.Log.Info("slave", slave_num, "receive task:", task)
-		lib := NewLibrary()
+			var taskData Task
+			err = json.Unmarshal([]byte(task), &taskData)
+			if err != nil {
+				returnError(ErrInvalidTaskString, Task{})
+				wg.Done()
+				continue
+			}
 
-		var taskData Task
-		err = json.Unmarshal([]byte(task), &taskData)
-		if err != nil {
-			returnError(ErrInvalidTaskString, Task{})
-			wg.Done()
-			continue
-		}
-
-		imgTask, err := NewImageProcessTask(lib, taskData)
-		if err != nil {
-			returnError(err, taskData)
-			wg.Done()
-			continue
-		}
-
-		data, err := downloadImage(imgTask.downloadUrl)
-		if err != nil {
-			returnError(ErrPictureDoanloadFailed, taskData)
-			wg.Done()
-			continue
-		}
-
-		for _, op := range imgTask.ops {
-			data, err = op.DoProcess(data)
-			op.Close()
+			imgTask, err := NewImageProcessTask(lib, taskData)
 			if err != nil {
 				returnError(err, taskData)
-				break
+				wg.Done()
+				continue
 			}
+
+			data, err := downloadImage(imgTask.downloadUrl)
+			if err != nil {
+				returnError(ErrPictureDoanloadFailed, taskData)
+				wg.Done()
+				continue
+			}
+
+			for _, op := range imgTask.ops {
+				data, err = op.DoProcess(data)
+				if err != nil {
+					returnError(err, taskData)
+					break
+				}
+			}
+			if err == nil {
+				ReturnQ := FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+				listenFinishedTask(ReturnQ)
+			}
+			wg.Done()
 		}
-		if err == nil {
-			ReturnQ := FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
-			listenFinishedTask(ReturnQ)
-		}
-		wg.Done()
 	}
 }
 
@@ -215,6 +225,11 @@ func returnError(err error, t Task) {
 }
 
 func Stop() {
+	for i := 0; i < helper.Config.WorkersNumber; i++ {
+		finishPipa <- true
+	}
+	helper.Log.Info("Stopping Pipa")
 	wg.Wait()
-	helper.Log.Info("Pipa stop")
+	helper.Log.Info("Done")
+	close(finishPipa)
 }

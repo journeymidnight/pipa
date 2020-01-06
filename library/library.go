@@ -10,3 +10,7 @@ func NewLibrary() Library {
 	//TODO: support other libraries
 	return imagick.Initialize()
 }
+
+func CloseLibrary() {
+	imagick.Terminate()
+}
