@@ -20,13 +20,12 @@ type Operation interface {
 	SetOption(captures map[string]string) (err error)
 	SetPictureData(data []byte)
 	DoProcess(data []byte) (result []byte, err error)
-	Close()
 }
 
 type Resize struct {
 	isWatermark bool
-	img  imagick.ImageWand
-	plan imagick.ResizePlan
+	img         imagick.ImageWand
+	plan        imagick.ResizePlan
 }
 
 func (r *Resize) GetType() string {
@@ -166,9 +165,6 @@ func (r *Resize) DoProcess(data []byte) (result []byte, err error) {
 	return r.img.ReturnData(), nil
 }
 
-func (r *Resize) Close() {
-	r.img.Terminate()
-}
 
 type Watermark struct {
 	domain      string
@@ -280,7 +276,11 @@ func (w *Watermark) SetOption(captures map[string]string) (err error) {
 		}
 	}
 
-	w.plan.TextMask.Color = checkColor(captures["color"])
+	if captures["color"] == "" {
+		w.plan.TextMask.Color = imagick.DefaultTextColor
+	} else {
+		w.plan.TextMask.Color = checkColor(captures["color"])
+	}
 
 	if captures["size"] == "" {
 		w.plan.TextMask.Size = imagick.DefaultFrontSize
@@ -407,6 +407,3 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	return w.img.ReturnData(), nil
 }
 
-func (w *Watermark) Close() {
-	w.img.Terminate()
-}

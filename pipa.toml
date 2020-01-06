@@ -2,7 +2,6 @@ s3domain = ["s3.test.com", "s3-internal.test.com"]
 log_level = "info"
 log_path = "/var/log/pipa/pipa.log"
 workers_number = 64
-max_task_number = 10000
 
 redis_address = "redis:6379"
 redis_password = "hehehehe"

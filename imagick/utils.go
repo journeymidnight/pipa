@@ -19,6 +19,7 @@ const (
 	DefaultTransparency = 100
 	DefaultFrontSize    = 40.0
 	DefaultBackground   = "#FFFFFF"
+	DefaultTextColor    = "#000000"
 )
 
 const (

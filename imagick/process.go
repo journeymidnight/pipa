@@ -73,7 +73,7 @@ func (img *ImageWand) Destory() {
 	img.PixelWand.Destroy()
 }
 
-func (img *ImageWand) Terminate() {
+func Terminate() {
 	imagick.Terminate()
 }
 
