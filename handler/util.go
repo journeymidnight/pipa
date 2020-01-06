@@ -12,7 +12,7 @@ import (
 const (
 	UrlHead      = "http://"
 	OssProcess   = "?x-oss-process=image/"
-	DefaultColor = "#000000"
+	DefaultColor = "#FFFFFF"
 )
 
 func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
