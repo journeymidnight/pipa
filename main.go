@@ -21,7 +21,7 @@ func main() {
 	redis.Initialize()
 	defer redis.Close()
 
-	go handler.StartWorker()
+	handler.StartWorker()
 
 	signal.Ignore()
 	signalQueue := make(chan os.Signal)

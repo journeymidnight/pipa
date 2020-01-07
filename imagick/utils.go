@@ -18,7 +18,8 @@ const (
 	DefaultYMargin      = 10
 	DefaultTransparency = 100
 	DefaultFrontSize    = 40.0
-	DefaultBackground   = "#000000"
+	DefaultBackground   = "#FFFFFF"
+	DefaultTextColor    = "#000000"
 )
 
 const (

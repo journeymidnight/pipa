@@ -5,15 +5,16 @@ import (
 )
 
 const DdfaultGravity = imagick.GRAVITY_SOUTH_EAST
-const AlphaOpaque =  imagick.ALPHA_CHANNEL_UNDEFINED
+const AlphaUndefined = imagick.ALPHA_CHANNEL_UNDEFINED
+const AlphaOpaque = imagick.ALPHA_CHANNEL_OPAQUE
 const EvaluateOperator = imagick.EVAL_OP_MULTIPLY
 
 type Watermark struct {
 	XMargin      int
 	YMargin      int
-	Gravity      imagick.GravityType	//used to set putting watermark form where
+	Gravity      imagick.GravityType //used to set putting watermark form where
 	Transparency float64
-	Picture      *imagick.MagickWand	//watermark is picture
+	Picture      *imagick.MagickWand //watermark is picture
 	Text         *Text
 }
 
@@ -34,16 +35,26 @@ func newWatermark() Watermark {
 
 func (img *ImageWand) watermark(o Watermark) (err error) {
 	if o.Picture != nil {
-		err = o.Picture.SetImageAlphaChannel(AlphaOpaque)
-		if err != nil {
-			return err
+		isTranparency := o.Picture.GetImageAlphaChannel()
+		if isTranparency {
+			err = o.Picture.SetImageAlphaChannel(AlphaUndefined)
+			if err != nil {
+				return err
+			}
+			err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = o.Picture.SetImageAlphaChannel(AlphaOpaque)
+			if err != nil {
+				return err
+			}
+			err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
+			if err != nil {
+				return err
+			}
 		}
-		err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
-
-		if err != nil {
-			return err
-		}
-
 		err = img.MagickWand.CompositeImage(o.Picture, o.Picture.GetImageCompose(), true, o.XMargin, o.YMargin)
 		if err != nil {
 			return err
