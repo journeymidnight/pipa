@@ -11,7 +11,7 @@ import (
 
 const (
 	UrlHead      = "http://"
-	OssProcess   = "?x-oss-process=image/"
+	OssProcess   = "x-oss-process"
 	DefaultColor = "#FFFFFF"
 )
 
@@ -22,9 +22,7 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 		taskUrl = taskUrl[:len(taskUrl)-1]
 	}
 
-	urlFragments := strings.Split(taskUrl, "\u0026")
-
-	pos := strings.Index(urlFragments[0], OssProcess)
+	pos := strings.Index(taskUrl, OssProcess)
 	if pos == -1 {
 		if isWatermark {
 			return taskUrl, operations, nil
@@ -32,28 +30,28 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 		return "", operations, ErrNotFoundOssProcess
 	}
 
-	path, err := url.Parse(urlFragments[0])
+	path, err := url.Parse(taskUrl)
 	if err != nil {
 		return "", operations, err
 	}
+
 	isBucketDomain, _ := HasBucketInDomain(path.Hostname(), ".", helper.Config.S3Domain)
 	if !isBucketDomain {
+		//TODO: if need to support format of url like "s3.test.com/bucketName/objectName",modify it
 		return "", operations, ErrIsNotBucketDomain
 	}
 	//path.Hostname():*.s3.test.com
 	host := UrlHead + path.Hostname()
-	// /osstest.jpg
+	//path.EscapedPath(): /dir/osstest.jpg
 	objectPath := path.EscapedPath()
 	downloadUrl = host + objectPath
-	if len(urlFragments) > 1 {
-		downloadUrl = downloadUrl + "?" + urlFragments[1]
-		for i := 2; i < len(urlFragments); i++ {
-			downloadUrl += "&" + urlFragments[i]
-		}
-	}
 
-	params := urlFragments[0][pos+len(OssProcess):]
-	for _, param := range strings.Split(params, "/") {
+	processParams := path.Query().Get(OssProcess)
+	if "" == processParams {
+		return "", operations, ErrNotFoundOssProcess
+	}
+	params := strings.Split(processParams, "/")
+	for _, param := range params[1:] {
 		operation, err := parseParam(param)
 		if err != nil {
 			return "", operations, err
@@ -68,6 +66,17 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 		}
 		operations = append(operations, operation)
 	}
+
+	if len(path.Query()) > 1 {
+		downloadUrl = downloadUrl + "?"
+		for urlQueryKey, urlQueryValue := range path.Query() {
+			if OssProcess != urlQueryKey {
+				downloadUrl += urlQueryKey + "=" + urlQueryValue[0] + "&"
+			}
+		}
+		downloadUrl = downloadUrl[:len(downloadUrl)-1]
+	}
+
 	return downloadUrl, operations, nil
 }
 
@@ -106,9 +115,9 @@ func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) 
 			return captures, ErrInvalidParametersHaveSpaces
 		}
 		keys := strings.Split(param, "_")
-		//if len(keys) > 2 {
-		//	return captures, ErrInvalidParameterFormat
-		//}
+		if len(keys) < 2 {
+			return captures, ErrInvalidParameterFormat
+		}
 		captures[keys[0]] = param[len(keys[0])+1:]
 	}
 	return captures, nil

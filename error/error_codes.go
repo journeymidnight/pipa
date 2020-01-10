@@ -67,7 +67,7 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	},
 	ErrNotFoundOssProcess: {
 		ErrorCode:    403,
-		ErrorMessage: "Can not parameter x-oss-process.",
+		ErrorMessage: "Can not find parameter x-oss-process.",
 	},
 	ErrInvalidParameter: {
 		ErrorCode:    403,

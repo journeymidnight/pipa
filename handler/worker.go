@@ -102,7 +102,7 @@ func slave(slave_num int) {
 
 			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
-				returnError(ErrPictureDoanloadFailed, taskData)
+				returnError(err, taskData)
 				wg.Done()
 				continue
 			}
@@ -225,10 +225,10 @@ func returnError(err error, t Task) {
 }
 
 func Stop() {
+	helper.Log.Info("Stopping Pipa")
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		finishPipa <- true
 	}
-	helper.Log.Info("Stopping Pipa")
 	wg.Wait()
 	helper.Log.Info("Done")
 	close(finishPipa)
