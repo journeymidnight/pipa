@@ -7,6 +7,11 @@ import (
 )
 
 const (
+	OriginPictureMaxLength    = 10000
+	PictureProcessedMaxLength = 15000
+)
+
+const (
 	//Resize default param
 	ZoomIsZero         = 0.0
 	IsNotForce         = false
@@ -166,11 +171,18 @@ func selectTextType(tType string) string {
 }
 
 func originPictureIsIllegal(originWidth, originHeight int) error {
-	if originHeight > 30000 || originWidth > 30000 {
+	if originHeight > OriginPictureMaxLength || originWidth > OriginPictureMaxLength {
 		return ErrPictureWidthOrHeightTooLong
 	}
 	if originHeight <= 0 || originWidth <= 0 {
 		return ErrPictureWidthOrHeightIsZero
+	}
+	return nil
+}
+
+func pictureOverlarge(factor float64, originWidth, originHeight int) error {
+	if originWidth*int(factor) > PictureProcessedMaxLength || originHeight*int(factor) > PictureProcessedMaxLength {
+		return ErrPictureWidthOrHeightTooLong
 	}
 	return nil
 }

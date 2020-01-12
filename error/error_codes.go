@@ -31,8 +31,10 @@ const (
 	ErrInvalidParameterProportion
 	ErrInvalidParameterBorder
 	ErrInvalidParametersHaveSpaces
-	ErrPictureDoanloadFailed
-	ErrWatermarkPictureDoanloadFailed
+	ErrInvalidParametersRotate
+	ErrWatermarkPictureParseFailed
+	ErrWatermarkPictureDownloadFailed
+	ErrNoParameter
 )
 
 type ErrorStruct struct {
@@ -153,13 +155,21 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: Parameters have spaces.",
 	},
-	ErrPictureDoanloadFailed:{
-		ErrorCode:    410,
-		ErrorMessage: "Picture download failed!.",
+	ErrInvalidParametersRotate: {
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Rotate degrees wrong.",
 	},
-	ErrWatermarkPictureDoanloadFailed:{
+	ErrWatermarkPictureParseFailed:{
+		ErrorCode:    410,
+		ErrorMessage: "Watermark picture parse failed.",
+	},
+	ErrWatermarkPictureDownloadFailed:{
 		ErrorCode:    410,
 		ErrorMessage: "Watermark picture download failed!.",
+	},
+	ErrNoParameter:{
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Parameter is empty.",
 	},
 }
 

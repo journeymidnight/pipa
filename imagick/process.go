@@ -54,6 +54,7 @@ type CropPlan struct {
 }
 
 type RotatePlan struct {
+	Degrees int
 }
 
 type ImageWand struct {
@@ -106,6 +107,9 @@ func (img *ImageWand) ResizeImageProcess(data []byte, plan ResizePlan) error {
 		if plan.WatermarkProportion != 0 {
 			factor, err := factorCalculations(img, plan.Data, float64(plan.WatermarkProportion))
 			if err != nil {
+				return err
+			}
+			if err = pictureOverlarge(factor, originWidth, originHeight); err != nil {
 				return err
 			}
 			o.Zoom = factor
@@ -320,6 +324,30 @@ func (img *ImageWand) ImageWatermarkProcess(data []byte, plan WatermarkPlan) err
 	} else {
 		return ErrInvalidWatermarkProcess
 	}
+}
+
+func (img *ImageWand) RotateImageProcess(data []byte, plan RotatePlan) error {
+	err := img.MagickWand.ReadImageBlob(data)
+	if err != nil {
+		helper.Log.Error("read data failed", err)
+		return err
+	}
+	originWidth := int(img.MagickWand.GetImageWidth())
+	originHeight := int(img.MagickWand.GetImageHeight())
+
+	if originHeight > 4096 || originWidth > 4096 {
+		return ErrPictureWidthOrHeightTooLong
+	}else if originHeight <= 0 || originWidth <= 0 {
+		return ErrPictureWidthOrHeightIsZero
+	}
+
+	r := newRotate()
+	r.Degrees = plan.Degrees
+	err = img.rotate(r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (img *ImageWand) ReturnData() []byte {

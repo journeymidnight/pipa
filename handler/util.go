@@ -52,6 +52,9 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 	}
 	params := strings.Split(processParams, "/")
 	for _, param := range params[1:] {
+		if param == "" {
+			continue
+		}
 		operation, err := parseParam(param)
 		if err != nil {
 			return "", operations, err
@@ -82,15 +85,13 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 
 func parseParam(param string) (operation Operation, err error) {
 	paramKeys := strings.Split(param, ",")
-
-	captures, err := getKeyAndValue(paramKeys[1:])
-	if err != nil {
-		return operation, err
-	}
-
 	switch paramKeys[0] {
 	case RESIZE:
 		operation = &Resize{}
+		captures, err := getKeyAndValue(paramKeys[1:])
+		if err != nil {
+			return operation, err
+		}
 		err = operation.SetOption(captures)
 		if err != nil {
 			return operation, err
@@ -98,6 +99,22 @@ func parseParam(param string) (operation Operation, err error) {
 		return operation, nil
 	case WATERMARK:
 		operation = &Watermark{}
+		captures, err := getKeyAndValue(paramKeys[1:])
+		if err != nil {
+			return operation, err
+		}
+		err = operation.SetOption(captures)
+		if err != nil {
+			return operation, err
+		}
+		return operation, nil
+	case ROTATE:
+		operation = &Rotate{}
+		captures := make(map[string]string)
+		if len(paramKeys) < 2 {
+			return operation, ErrInvalidParameterFormat
+		}
+		captures[ROTATE] = paramKeys[1]
 		err = operation.SetOption(captures)
 		if err != nil {
 			return operation, err
@@ -112,11 +129,11 @@ func getKeyAndValue(paramKeys []string) (captures map[string]string, err error) 
 	captures = make(map[string]string)
 	for _, param := range paramKeys {
 		if param == "" {
-			return captures, ErrInvalidParametersHaveSpaces
+			continue
 		}
 		keys := strings.Split(param, "_")
 		if len(keys) < 2 {
-			return captures, ErrInvalidParameterFormat
+			continue
 		}
 		captures[keys[0]] = param[len(keys[0])+1:]
 	}
