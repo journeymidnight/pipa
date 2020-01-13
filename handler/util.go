@@ -66,6 +66,12 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 			}
 			operation.SetDomain(host)
 			operation.SetIsWatermark(true)
+			break
+		case ROTATE:
+			if isWatermark {
+				return "", operations, ErrInvalidWatermarkRotateParam
+			}
+			break
 		}
 		operations = append(operations, operation)
 	}

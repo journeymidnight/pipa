@@ -24,7 +24,6 @@ const (
 	ErrInvalidParameterVoffset
 	ErrInvalidParameterText
 	ErrInvalidParameterTextSize
-	ErrInvalidParameterRotate
 	ErrInvalidParameterFill
 	ErrInvalidParameterLimit
 	ErrInvalidParameterMode
@@ -32,7 +31,7 @@ const (
 	ErrInvalidParameterBorder
 	ErrInvalidParametersHaveSpaces
 	ErrInvalidParametersRotate
-	ErrWatermarkPictureParseFailed
+	ErrInvalidWatermarkRotateParam
 	ErrWatermarkPictureDownloadFailed
 	ErrNoParameter
 )
@@ -127,10 +126,6 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: text size wrong.",
 	},
-	ErrInvalidParameterRotate: {
-		ErrorCode:    403,
-		ErrorMessage: "Invalid parameter: rotate wrong.",
-	},
 	ErrInvalidParameterLimit: {
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: limit wrong.",
@@ -159,9 +154,9 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: Rotate degrees wrong.",
 	},
-	ErrWatermarkPictureParseFailed:{
-		ErrorCode:    410,
-		ErrorMessage: "Watermark picture parse failed.",
+	ErrInvalidWatermarkRotateParam: {
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Picture watermark rotate parameter wrong, should be set like Text!",
 	},
 	ErrWatermarkPictureDownloadFailed:{
 		ErrorCode:    410,

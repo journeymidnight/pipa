@@ -294,15 +294,15 @@ func (w *Watermark) SetOption(captures map[string]string) (err error) {
 		}
 	}
 
-	if captures["rotate"] == "" {
-		w.plan.TextMask.Rotate = 0
+	if captures[ROTATE] == "" {
+		w.plan.RotateDegrees = 0
 	} else {
-		w.plan.TextMask.Rotate, err = strconv.Atoi(captures["rotate"])
+		w.plan.RotateDegrees, err = strconv.Atoi(captures[ROTATE])
 		if err != nil {
 			return err
 		}
-		if w.plan.TextMask.Rotate < 0 || w.plan.TextMask.Rotate > 360 {
-			return ErrInvalidParameterRotate
+		if w.plan.RotateDegrees < 0 || w.plan.RotateDegrees > 360 {
+			return ErrInvalidParametersRotate
 		}
 	}
 
@@ -384,7 +384,7 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 		}
 		downloadUrl, operations, err := ParseUrl(w.domain+"/"+w.plan.PictureMask.Image, w.isWatermark)
 		if err != nil {
-			return nil, ErrWatermarkPictureParseFailed
+			return nil, err
 		}
 
 		w.plan.PictureMask.Data, err = downloadImage(downloadUrl)
@@ -419,6 +419,7 @@ func (r *Rotate) GetType() string {
 func (r *Rotate) SetDomain(domain string) {
 
 }
+
 func (r *Rotate) SetIsWatermark(flag bool) {
 
 }
