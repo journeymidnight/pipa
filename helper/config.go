@@ -17,7 +17,6 @@ type PipaConfig struct {
 	LogLevel      string   `toml:"log_level"`
 	LogPath       string   `toml:"log_path"`
 	WorkersNumber int      `toml:"workers_number"`
-	MaxTaskNumber int      `toml:"max_task_number"`
 
 	RedisAddress         string `toml:"redis_address"`  // redis connection string, e.g localhost:1234
 	RedisPassword        string `toml:"redis_password"` // redis auth password
@@ -45,7 +44,6 @@ func SetupGlobalConfig() {
 	Config.LogLevel = c.LogLevel
 	Config.LogPath = c.LogPath
 	Config.WorkersNumber = c.WorkersNumber
-	Config.MaxTaskNumber = c.MaxTaskNumber
 
 	Config.RedisAddress = c.RedisAddress
 	Config.RedisPassword = c.RedisPassword

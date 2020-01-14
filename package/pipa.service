@@ -7,6 +7,7 @@ LimitAS=infinity
 LimitRSS=infinity
 LimitCORE=infinity
 LimitNOFILE=65535
+Environment=LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:/root/opt/lib
 Type=simple
 ExecStart=/usr/bin/pipa
 ExecStop=/usr/bin/kill $MAINPID

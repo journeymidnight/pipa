@@ -10,6 +10,7 @@ import (
 const (
 	RESIZE    = "resize"
 	WATERMARK = "watermark"
+	ROTATE    = "rotate"
 )
 
 type Operation interface {
@@ -17,16 +18,15 @@ type Operation interface {
 	SetDomain(domain string)
 	//whether process watermark picture
 	SetIsWatermark(flag bool)
-	GetOption(captures map[string]string) (err error)
-	GetPictureData(data []byte)
+	SetOption(captures map[string]string) (err error)
+	SetPictureData(data []byte)
 	DoProcess(data []byte) (result []byte, err error)
-	Close()
 }
 
 type Resize struct {
 	isWatermark bool
-	img  imagick.ImageWand
-	plan imagick.ResizePlan
+	img         imagick.ImageWand
+	plan        imagick.ResizePlan
 }
 
 func (r *Resize) GetType() string {
@@ -41,7 +41,7 @@ func (r *Resize) SetIsWatermark(flag bool) {
 	r.isWatermark = flag
 }
 
-func (r *Resize) GetOption(captures map[string]string) (err error) {
+func (r *Resize) SetOption(captures map[string]string) (err error) {
 	if captures["P"] == "" {
 		r.plan.WatermarkProportion = 0
 	} else {
@@ -152,7 +152,7 @@ func (r *Resize) GetOption(captures map[string]string) (err error) {
 	return nil
 }
 
-func (r *Resize) GetPictureData(data []byte) {
+func (r *Resize) SetPictureData(data []byte) {
 	r.plan.Data = data
 }
 
@@ -164,10 +164,6 @@ func (r *Resize) DoProcess(data []byte) (result []byte, err error) {
 		return data, err
 	}
 	return r.img.ReturnData(), nil
-}
-
-func (r *Resize) Close() {
-	r.img.Terminate()
 }
 
 type Watermark struct {
@@ -189,12 +185,12 @@ func (w *Watermark) SetIsWatermark(flag bool) {
 	w.isWatermark = flag
 }
 
-func (w *Watermark) GetOption(captures map[string]string) (err error) {
+func (w *Watermark) SetOption(captures map[string]string) (err error) {
 	if w.isWatermark == true {
 		return ErrInvalidWatermarkPicture
 	}
 	if captures["t"] == "" {
-		w.plan.Transparency = imagick.Transparency
+		w.plan.Transparency = imagick.DefaultTransparency
 	} else {
 		w.plan.Transparency, _ = strconv.Atoi(captures["t"])
 		if w.plan.Transparency < 0 || w.plan.Transparency > 100 {
@@ -280,10 +276,14 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		}
 	}
 
-	w.plan.TextMask.Color = checkColor(captures["color"])
+	if captures["color"] == "" {
+		w.plan.TextMask.Color = imagick.DefaultTextColor
+	} else {
+		w.plan.TextMask.Color = checkColor(captures["color"])
+	}
 
 	if captures["size"] == "" {
-		w.plan.TextMask.Size = imagick.FrontSize
+		w.plan.TextMask.Size = imagick.DefaultFrontSize
 	} else {
 		w.plan.TextMask.Size, err = strconv.Atoi(captures["size"])
 		if err != nil {
@@ -294,15 +294,15 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 		}
 	}
 
-	if captures["rotate"] == "" {
-		w.plan.TextMask.Rotate = 0
+	if captures[ROTATE] == "" {
+		w.plan.RotateDegrees = 0
 	} else {
-		w.plan.TextMask.Rotate, err = strconv.Atoi(captures["rotate"])
+		w.plan.RotateDegrees, err = strconv.Atoi(captures[ROTATE])
 		if err != nil {
 			return err
 		}
-		if w.plan.TextMask.Rotate < 0 || w.plan.TextMask.Rotate > 360 {
-			return ErrInvalidParameterRotate
+		if w.plan.RotateDegrees < 0 || w.plan.RotateDegrees > 360 {
+			return ErrInvalidParametersRotate
 		}
 	}
 
@@ -370,7 +370,7 @@ func (w *Watermark) GetOption(captures map[string]string) (err error) {
 	return nil
 }
 
-func (w *Watermark) GetPictureData(data []byte) {
+func (w *Watermark) SetPictureData(data []byte) {
 
 }
 
@@ -384,15 +384,15 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 		}
 		downloadUrl, operations, err := ParseUrl(w.domain+"/"+w.plan.PictureMask.Image, w.isWatermark)
 		if err != nil {
-			return nil, ErrWatermarkPictureDoanloadFailed
+			return nil, err
 		}
 
 		w.plan.PictureMask.Data, err = downloadImage(downloadUrl)
 		if err != nil {
-			return nil, err
+			return nil, ErrWatermarkPictureDownloadFailed
 		}
 		for _, op := range operations {
-			op.GetPictureData(data)
+			op.SetPictureData(data)
 			w.plan.PictureMask.Data, err = op.DoProcess(w.plan.PictureMask.Data)
 			if err != nil {
 				return nil, err
@@ -407,6 +407,48 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	return w.img.ReturnData(), nil
 }
 
-func (w *Watermark) Close() {
-	w.img.Terminate()
+type Rotate struct {
+	img  imagick.ImageWand
+	plan imagick.RotatePlan
+}
+
+func (r *Rotate) GetType() string {
+	return ROTATE
+}
+
+func (r *Rotate) SetDomain(domain string) {
+
+}
+
+func (r *Rotate) SetIsWatermark(flag bool) {
+
+}
+
+func (r *Rotate) SetOption(captures map[string]string) (err error) {
+	if captures[ROTATE] == "" {
+		return ErrNoParameter
+	} else {
+		r.plan.Degrees, err = strconv.Atoi(captures[ROTATE])
+		if err != nil {
+			return err
+		}
+		if r.plan.Degrees < 0 || r.plan.Degrees > 360 {
+			return ErrInvalidParametersRotate
+		}
+	}
+	return nil
+}
+
+func (r *Rotate) SetPictureData(data []byte) {
+
+}
+
+func (r *Rotate) DoProcess(data []byte) (result []byte, err error) {
+	r.img = imagick.NewImageWand()
+	defer r.img.Destory()
+	err = r.img.RotateImageProcess(data, r.plan)
+	if err != nil {
+		return data, err
+	}
+	return r.img.ReturnData(), nil
 }

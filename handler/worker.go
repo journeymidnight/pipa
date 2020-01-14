@@ -20,9 +20,8 @@ const TaskQueue = "taskQueue"
 const PictureMAxSize = 20 << 20
 
 var (
-	TaskQ   chan string
-	ReturnQ chan FinishedTask
-	wg      sync.WaitGroup
+	finishPipa chan bool
+	wg         sync.WaitGroup
 )
 
 type Task struct {
@@ -53,21 +52,10 @@ type FinishedTask struct {
 }
 
 func StartWorker() {
-	TaskQ = make(chan string, helper.Config.MaxTaskNumber)
-	ReturnQ = make(chan FinishedTask)
+	finishPipa = make(chan bool)
 
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		go slave(i)
-	}
-	go listenFinishedTask(ReturnQ)
-
-	for {
-		t, err := receiveImageTask()
-		if err != nil {
-			continue
-		}
-		helper.Log.Info("receive image task:", t)
-		TaskQ <- t
 	}
 }
 
@@ -80,18 +68,25 @@ func receiveImageTask() (string, error) {
 }
 
 func slave(slave_num int) {
+	lib := NewLibrary()
+	defer CloseLibrary()
 	for {
 		select {
-		case task, ok := <-TaskQ:
-			if !ok {
-				return
-			}
+		case <-finishPipa:
+			helper.Log.Info("stop slave:", slave_num)
+			return
+		default:
 			wg.Add(1)
+			task, err := receiveImageTask()
+			if err != nil || len(task) == 0 {
+				wg.Done()
+				continue
+			}
+
 			helper.Log.Info("slave", slave_num, "receive task:", task)
-			lib := NewLibrary()
 
 			var taskData Task
-			err := json.Unmarshal([]byte(task), &taskData)
+			err = json.Unmarshal([]byte(task), &taskData)
 			if err != nil {
 				returnError(ErrInvalidTaskString, Task{})
 				wg.Done()
@@ -107,21 +102,21 @@ func slave(slave_num int) {
 
 			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
-				returnError(ErrPictureDoanloadFailed, taskData)
+				returnError(err, taskData)
 				wg.Done()
 				continue
 			}
 
 			for _, op := range imgTask.ops {
 				data, err = op.DoProcess(data)
-				op.Close()
 				if err != nil {
 					returnError(err, taskData)
 					break
 				}
 			}
 			if err == nil {
-				ReturnQ <- FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+				ReturnQ := FinishedTask{200, "200,Process picture success!", taskData.UUID, taskData.Url, data}
+				listenFinishedTask(ReturnQ)
 			}
 			wg.Done()
 		}
@@ -131,7 +126,7 @@ func slave(slave_num int) {
 func downloadImage(downloadUrl string) ([]byte, error) {
 	helper.Log.Info(fmt.Sprintf("Start to download %s\n", downloadUrl))
 
-	httpClient := &http.Client{Timeout: time.Second * 5}
+	httpClient := &http.Client{Timeout: time.Second * 30}
 	resp, err := httpClient.Get(downloadUrl)
 
 	if err != nil {
@@ -180,37 +175,36 @@ func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
 	}, nil
 }
 
-func listenFinishedTask(resultQ chan FinishedTask) {
+func listenFinishedTask(resultQ FinishedTask) {
 	c := redis.Pool.Get()
 	defer c.Close()
-	for r := range resultQ {
-		//put data back to redis
-		if r.code == 200 {
-			_, err := c.Do("MULTI")
-			if err != nil {
-				helper.Log.Error("MULTI do err:", err)
-			}
-			_, err = c.Do("SET", r.url, r.blob)
-			if err != nil {
-				helper.Log.Error("SET do err:", err)
-			}
-			_, err = c.Do("LPUSH", r.uuid, r.returnMessage)
-			if err != nil {
-				helper.Log.Error("LPUSH do err:", err)
-			}
-			_, err = c.Do("EXEC")
-			if err != nil {
-				helper.Log.Error("EXEC do err:", err)
-			}
-			r.blob = nil
-		} else {
-			_, err := c.Do("LPUSH", r.uuid, r.returnMessage)
-			if err != nil {
-				helper.Log.Error("EXEC do err:", err)
-			}
+	if resultQ.code == 200 {
+		_, err := c.Do("MULTI")
+		if err != nil {
+			helper.Log.Error("MULTI do err:", err)
 		}
-		helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", r.uuid, r.url, r.returnMessage))
+		_, err = c.Do("SET", resultQ.url, resultQ.blob)
+		if err != nil {
+			c.Do("DISCARD")
+			helper.Log.Error("SET do err:", err)
+		}
+		_, err = c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
+		if err != nil {
+			c.Do("DISCARD")
+			helper.Log.Error("LPUSH do err:", err)
+		}
+		_, err = c.Do("EXEC")
+		if err != nil {
+			helper.Log.Error("EXEC do err:", err)
+		}
+		resultQ.blob = nil
+	} else {
+		_, err := c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
+		if err != nil {
+			helper.Log.Error("EXEC do err:", err)
+		}
 	}
+	helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", resultQ.uuid, resultQ.url, resultQ.returnMessage))
 }
 
 func returnError(err error, t Task) {
@@ -227,16 +221,15 @@ func returnError(err error, t Task) {
 	helper.Log.Error(err)
 	returnMessage := strconv.Itoa(code) + "," + message
 	result := FinishedTask{code, returnMessage, t.UUID, t.Url, nil}
-	sendResult(result)
-}
-
-func sendResult(t FinishedTask) {
-	ReturnQ <- t
+	listenFinishedTask(result)
 }
 
 func Stop() {
-	close(TaskQ)
+	helper.Log.Info("Stopping Pipa")
+	for i := 0; i < helper.Config.WorkersNumber; i++ {
+		finishPipa <- true
+	}
 	wg.Wait()
-	close(ReturnQ)
-	helper.Log.Info("Pipa stop")
+	helper.Log.Info("Done")
+	close(finishPipa)
 }
