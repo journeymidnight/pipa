@@ -25,6 +25,7 @@ type PipaConfig struct {
 	RedisWriteTimeout    int    `toml:"redis_write_timeout"`
 	RedisPoolMaxIdle     int    `toml:"redis_pool_max_idle"`
 	RedisPoolIdleTimeout int    `toml:"redis_pool_idle_timeout"`
+	RedisSetDataMaxTime  int	`toml:"redis_set_data_max_time"`
 }
 
 func SetupGlobalConfig() {

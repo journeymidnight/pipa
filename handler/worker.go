@@ -183,7 +183,7 @@ func listenFinishedTask(resultQ FinishedTask) {
 		if err != nil {
 			helper.Log.Error("MULTI do err:", err)
 		}
-		_, err = c.Do("SET", resultQ.url, resultQ.blob)
+		_, err = c.Do("SET", resultQ.url, resultQ.blob, "PX", 1000*helper.Config.RedisSetDataMaxTime)
 		if err != nil {
 			c.Do("DISCARD")
 			helper.Log.Error("SET do err:", err)
