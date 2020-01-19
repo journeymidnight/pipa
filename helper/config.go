@@ -53,4 +53,5 @@ func SetupGlobalConfig() {
 	Config.RedisWriteTimeout = c.RedisWriteTimeout
 	Config.RedisPoolMaxIdle = c.RedisPoolMaxIdle
 	Config.RedisPoolIdleTimeout = c.RedisPoolIdleTimeout
+	Config.RedisSetDataMaxTime = c.RedisSetDataMaxTime
 }

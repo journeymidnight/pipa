@@ -31,8 +31,10 @@ func Initialize() {
 			return c, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			pong, err := c.Do("PING")
-			helper.Log.Error("redis PING:",pong)
+			_, err := c.Do("PING")
+			if err != nil {
+				helper.Log.Error("redis PING:",err)
+			}
 			return err
 		},
 	}
