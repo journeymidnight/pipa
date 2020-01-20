@@ -51,6 +51,9 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 		return "", operations, ErrNotFoundOssProcess
 	}
 	params := strings.Split(processParams, "/")
+	if len(params) <= 1 {
+		return "", operations, ErrNullParameter
+	}
 	for _, param := range params[1:] {
 		if param == "" {
 			continue

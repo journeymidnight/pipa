@@ -10,6 +10,7 @@ const (
 	StatusRequestEntityTooLarge
 	StatusUnsupportedMediaType
 	ErrNotFoundOssProcess
+	ErrNullParameter
 	ErrInvalidParameter
 	ErrInvalidParameterFormat
 	ErrInvalidWatermarkProcess
@@ -69,6 +70,10 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	ErrNotFoundOssProcess: {
 		ErrorCode:    403,
 		ErrorMessage: "Can not find parameter x-oss-process.",
+	},
+	ErrNullParameter: {
+		ErrorCode:    403,
+		ErrorMessage: "Null parameter",
 	},
 	ErrInvalidParameter: {
 		ErrorCode:    403,
