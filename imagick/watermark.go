@@ -4,23 +4,15 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-const DdfaultGravity = imagick.GRAVITY_SOUTH_EAST
-const AlphaUndefined = imagick.ALPHA_CHANNEL_UNDEFINED
-const AlphaOpaque = imagick.ALPHA_CHANNEL_OPAQUE
-const EvaluateOperator = imagick.EVAL_OP_MULTIPLY
-
 type Watermark struct {
 	XMargin      int
 	YMargin      int
-	Gravity      imagick.GravityType //used to set putting watermark form where
 	Transparency float64
 	Picture      *imagick.MagickWand //watermark is picture
-	Text         *Text
 }
 
 type Text struct {
 	text     string
-	textType string
 	color    string
 	front    string
 	fontSize int
@@ -30,53 +22,58 @@ type Text struct {
 }
 
 func newWatermark() Watermark {
-	return Watermark{DefaultXMargin, DefaultYMargin, DdfaultGravity, DefaultTransparency, nil, new(Text)}
+	return Watermark{DefaultXMargin, DefaultYMargin, DefaultTransparency, nil}
 }
 
 func (img *ImageWand) watermark(o Watermark) (err error) {
 	if o.Picture != nil {
-		isTranparency := o.Picture.GetImageAlphaChannel()
-		if isTranparency {
-			err = o.Picture.SetImageAlphaChannel(AlphaUndefined)
-			if err != nil {
-				return err
-			}
-			err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = o.Picture.SetImageAlphaChannel(AlphaOpaque)
-			if err != nil {
-				return err
-			}
-			err = o.Picture.EvaluateImage(EvaluateOperator, o.Transparency)
-			if err != nil {
-				return err
-			}
-		}
-		err = img.MagickWand.CompositeImage(o.Picture, o.Picture.GetImageCompose(), true, o.XMargin, o.YMargin)
+		err = o.Picture.SetImageAlphaChannel(imagick.ALPHA_CHANNEL_SET)
 		if err != nil {
 			return err
 		}
-	}
-	if o.Text.text != "" {
-		img.PixelWand.SetColor(o.Text.color)
-		img.DrawWand.SetFillColor(img.PixelWand)
+		prev := o.Picture.SetImageChannelMask(imagick.CHANNEL_ALPHA)
+		err := o.Picture.EvaluateImage(imagick.EVAL_OP_MULTIPLY, o.Transparency)
+		if err != nil {
+			return err
+		}
 
-		img.DrawWand.SetFillOpacity(o.Transparency)
-		err = img.DrawWand.SetFont(o.Text.front)
+		err = img.MagickWand.CompositeImage(o.Picture, imagick.COMPOSITE_OP_DISSOLVE, true, o.XMargin, o.YMargin)
 		if err != nil {
 			return err
 		}
-		img.DrawWand.SetFontSize(float64(o.Text.fontSize))
-		img.DrawWand.SetGravity(o.Gravity)
-		img.DrawWand.Annotation(float64(o.XMargin), float64(o.YMargin), o.Text.text)
-
-		err = img.MagickWand.DrawImage(img.DrawWand)
-		if err != nil {
-			return err
-		}
+		o.Picture.SetImageChannelMask(prev)
 	}
 	return nil
+}
+
+func (img *ImageWand) setTextAsPicture(t Text) (*imagick.MagickWand, error) {
+	text := imagick.NewMagickWand()
+
+	img.PixelWand.SetColor(t.color)
+	img.DrawWand.SetFillColor(img.PixelWand)
+
+	err := img.DrawWand.SetFont(t.front)
+	if err != nil {
+		return nil, err
+	}
+	img.DrawWand.SetFontSize(float64(t.fontSize))
+	img.DrawWand.SetGravity(imagick.GRAVITY_CENTER)
+	img.DrawWand.Rotate(float64(t.rotate))
+	img.DrawWand.Annotation(0, 0, t.text)
+
+	//set text picture
+	img.PixelWand.SetColor("none")
+	err = text.NewImage(uint(4096), uint(4096), img.PixelWand)
+	if err != nil {
+		return nil, err
+	}
+	err = text.DrawImage(img.DrawWand)
+	if err != nil {
+		return nil, err
+	}
+	err = text.TrimImage(1)
+	if err != nil {
+		return nil, err
+	}
+	return text, nil
 }

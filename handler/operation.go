@@ -10,6 +10,7 @@ import (
 const (
 	RESIZE    = "resize"
 	WATERMARK = "watermark"
+	ROTATE    = "rotate"
 )
 
 type Operation interface {
@@ -165,7 +166,6 @@ func (r *Resize) DoProcess(data []byte) (result []byte, err error) {
 	return r.img.ReturnData(), nil
 }
 
-
 type Watermark struct {
 	domain      string
 	isWatermark bool
@@ -294,15 +294,15 @@ func (w *Watermark) SetOption(captures map[string]string) (err error) {
 		}
 	}
 
-	if captures["rotate"] == "" {
-		w.plan.TextMask.Rotate = 0
+	if captures[ROTATE] == "" {
+		w.plan.RotateDegrees = 0
 	} else {
-		w.plan.TextMask.Rotate, err = strconv.Atoi(captures["rotate"])
+		w.plan.RotateDegrees, err = strconv.Atoi(captures[ROTATE])
 		if err != nil {
 			return err
 		}
-		if w.plan.TextMask.Rotate < 0 || w.plan.TextMask.Rotate > 360 {
-			return ErrInvalidParameterRotate
+		if w.plan.RotateDegrees < 0 || w.plan.RotateDegrees > 360 {
+			return ErrInvalidParametersRotate
 		}
 	}
 
@@ -384,12 +384,12 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 		}
 		downloadUrl, operations, err := ParseUrl(w.domain+"/"+w.plan.PictureMask.Image, w.isWatermark)
 		if err != nil {
-			return nil, ErrWatermarkPictureDoanloadFailed
+			return nil, err
 		}
 
 		w.plan.PictureMask.Data, err = downloadImage(downloadUrl)
 		if err != nil {
-			return nil, err
+			return nil, ErrWatermarkPictureDownloadFailed
 		}
 		for _, op := range operations {
 			op.SetPictureData(data)
@@ -407,3 +407,48 @@ func (w *Watermark) DoProcess(data []byte) (result []byte, err error) {
 	return w.img.ReturnData(), nil
 }
 
+type Rotate struct {
+	img  imagick.ImageWand
+	plan imagick.RotatePlan
+}
+
+func (r *Rotate) GetType() string {
+	return ROTATE
+}
+
+func (r *Rotate) SetDomain(domain string) {
+
+}
+
+func (r *Rotate) SetIsWatermark(flag bool) {
+
+}
+
+func (r *Rotate) SetOption(captures map[string]string) (err error) {
+	if captures[ROTATE] == "" {
+		return ErrNoParameter
+	} else {
+		r.plan.Degrees, err = strconv.Atoi(captures[ROTATE])
+		if err != nil {
+			return err
+		}
+		if r.plan.Degrees < 0 || r.plan.Degrees > 360 {
+			return ErrInvalidParametersRotate
+		}
+	}
+	return nil
+}
+
+func (r *Rotate) SetPictureData(data []byte) {
+
+}
+
+func (r *Rotate) DoProcess(data []byte) (result []byte, err error) {
+	r.img = imagick.NewImageWand()
+	defer r.img.Destory()
+	err = r.img.RotateImageProcess(data, r.plan)
+	if err != nil {
+		return data, err
+	}
+	return r.img.ReturnData(), nil
+}

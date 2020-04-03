@@ -10,6 +10,7 @@ const (
 	StatusRequestEntityTooLarge
 	StatusUnsupportedMediaType
 	ErrNotFoundOssProcess
+	ErrNullParameter
 	ErrInvalidParameter
 	ErrInvalidParameterFormat
 	ErrInvalidWatermarkProcess
@@ -24,15 +25,16 @@ const (
 	ErrInvalidParameterVoffset
 	ErrInvalidParameterText
 	ErrInvalidParameterTextSize
-	ErrInvalidParameterRotate
 	ErrInvalidParameterFill
 	ErrInvalidParameterLimit
 	ErrInvalidParameterMode
 	ErrInvalidParameterProportion
 	ErrInvalidParameterBorder
 	ErrInvalidParametersHaveSpaces
-	ErrPictureDoanloadFailed
-	ErrWatermarkPictureDoanloadFailed
+	ErrInvalidParametersRotate
+	ErrInvalidWatermarkRotateParam
+	ErrWatermarkPictureDownloadFailed
+	ErrNoParameter
 )
 
 type ErrorStruct struct {
@@ -67,7 +69,11 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 	},
 	ErrNotFoundOssProcess: {
 		ErrorCode:    403,
-		ErrorMessage: "Can not parameter x-oss-process.",
+		ErrorMessage: "Can not find parameter x-oss-process.",
+	},
+	ErrNullParameter: {
+		ErrorCode:    403,
+		ErrorMessage: "Null parameter",
 	},
 	ErrInvalidParameter: {
 		ErrorCode:    403,
@@ -125,10 +131,6 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: text size wrong.",
 	},
-	ErrInvalidParameterRotate: {
-		ErrorCode:    403,
-		ErrorMessage: "Invalid parameter: rotate wrong.",
-	},
 	ErrInvalidParameterLimit: {
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: limit wrong.",
@@ -153,13 +155,21 @@ var ErrorCodeResponse = map[PipaError]ErrorStruct{
 		ErrorCode:    403,
 		ErrorMessage: "Invalid parameter: Parameters have spaces.",
 	},
-	ErrPictureDoanloadFailed:{
-		ErrorCode:    410,
-		ErrorMessage: "Picture download failed!.",
+	ErrInvalidParametersRotate: {
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Rotate degrees wrong.",
 	},
-	ErrWatermarkPictureDoanloadFailed:{
+	ErrInvalidWatermarkRotateParam: {
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Picture watermark rotate parameter wrong, should be set like Text!",
+	},
+	ErrWatermarkPictureDownloadFailed:{
 		ErrorCode:    410,
 		ErrorMessage: "Watermark picture download failed!.",
+	},
+	ErrNoParameter:{
+		ErrorCode:    403,
+		ErrorMessage: "Invalid parameter: Parameter is empty.",
 	},
 }
 

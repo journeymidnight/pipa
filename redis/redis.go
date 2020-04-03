@@ -25,12 +25,16 @@ func Initialize() {
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", helper.Config.RedisAddress, options...)
 			if err != nil {
+				helper.Log.Error("connect redis failed:",err)
 				return nil, err
 			}
 			return c, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			_, err := c.Do("PING")
+			if err != nil {
+				helper.Log.Error("redis PING:",err)
+			}
 			return err
 		},
 	}

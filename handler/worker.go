@@ -102,7 +102,7 @@ func slave(slave_num int) {
 
 			data, err := downloadImage(imgTask.downloadUrl)
 			if err != nil {
-				returnError(ErrPictureDoanloadFailed, taskData)
+				returnError(err, taskData)
 				wg.Done()
 				continue
 			}
@@ -183,7 +183,7 @@ func listenFinishedTask(resultQ FinishedTask) {
 		if err != nil {
 			helper.Log.Error("MULTI do err:", err)
 		}
-		_, err = c.Do("SET", resultQ.url, resultQ.blob)
+		_, err = c.Do("SET", resultQ.url, resultQ.blob, "PX", 1000*helper.Config.RedisSetDataMaxTime)
 		if err != nil {
 			c.Do("DISCARD")
 			helper.Log.Error("SET do err:", err)
@@ -225,10 +225,10 @@ func returnError(err error, t Task) {
 }
 
 func Stop() {
+	helper.Log.Info("Stopping Pipa")
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		finishPipa <- true
 	}
-	helper.Log.Info("Stopping Pipa")
 	wg.Wait()
 	helper.Log.Info("Done")
 	close(finishPipa)
