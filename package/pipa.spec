@@ -22,9 +22,9 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 %install
 rm -rf %{buildroot}
 install -D -m 755 pipa %{buildroot}%{_bindir}/pipa
-install -D -m 644 pipa.logrotate %{buildroot}/etc/logrotate.d/restore.logrotate
-install -D -m 644 pipa.service %{buildroot}/usr/lib/systemd/system/yig-restore.service
-install -D -m 644 pipa.toml %{buildroot}%{_sysconfdir}/yig/yig-restore.toml
+install -D -m 644 pipa.logrotate %{buildroot}/etc/logrotate.d/pipa.logrotate
+install -D -m 644 pipa.service %{buildroot}/usr/lib/systemd/system/pipa.service
+install -D -m 644 pipa.toml %{buildroot}%{_sysconfdir}/pipa/pipa.toml
 install -d %{buildroot}/var/log/pipa/
 
 %post
@@ -37,7 +37,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%config(noreplace) /etc/yig/pipa.toml
+%config(noreplace) /etc/pipa/pipa.toml
 /usr/bin/pipa
 /etc/logrotate.d/pipa.logrotate
 %dir /var/log/pipa/
