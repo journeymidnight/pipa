@@ -18,12 +18,15 @@ var RedisConn Redis
 func Initialize() {
 	switch helper.Config.RedisStore {
 	case "single":
-		RedisConn = single.InitializeSingle().(Redis)
+		r := single.InitializeSingle()
+		RedisConn = r.(Redis)
 		break
 	case "cluster":
-		RedisConn = cluster.InitializeCluster().(Redis)
+		r := cluster.InitializeCluster()
+		RedisConn = r.(Redis)
 		break
 	default:
-		RedisConn = single.InitializeSingle().(Redis)
+		r := single.InitializeSingle()
+		RedisConn = r.(Redis)
 	}
 }

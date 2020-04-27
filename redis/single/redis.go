@@ -40,7 +40,8 @@ func InitializeSingle() interface{} {
 			return err
 		},
 	}
-	return SingleRedis{Pool: pool}
+	r := &SingleRedis{Pool: pool}
+	return interface{}(r)
 }
 
 func (s *SingleRedis) Close() {

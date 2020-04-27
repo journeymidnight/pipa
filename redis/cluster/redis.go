@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/chasex/redis-go-cluster"
 	"github.com/journeymidnight/pipa/helper"
+	"github.com/wuxibin89/redis-go-cluster"
 	"time"
 )
 
@@ -27,7 +27,8 @@ func InitializeCluster() interface{} {
 	if err != nil {
 		helper.Log.Error("redis.New error: %s", err.Error())
 	}
-	return ClusterRedis{Cluster: cluster}
+	r := ClusterRedis{Cluster: cluster}
+	return interface{}(r)
 }
 
 func (c *ClusterRedis) Close() {
