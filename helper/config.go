@@ -18,13 +18,17 @@ type PipaConfig struct {
 	LogPath       string   `toml:"log_path"`
 	WorkersNumber int      `toml:"workers_number"`
 
-	RedisAddress         string `toml:"redis_address"`  // redis connection string, e.g localhost:1234
-	RedisPassword        string `toml:"redis_password"` // redis auth password
-	RedisConnectTimeout  int    `toml:"redis_connect_timeout"`
-	RedisReadTimeout     int    `toml:"redis_read_timeout"`
-	RedisWriteTimeout    int    `toml:"redis_write_timeout"`
-	RedisPoolMaxIdle     int    `toml:"redis_pool_max_idle"`
-	RedisPoolIdleTimeout int    `toml:"redis_pool_idle_timeout"`
+	RedisStore           string   `toml:"redis_store"`    // Choose redis connection method
+	RedisAddress         string   `toml:"redis_address"`  // redis connection string, e.g localhost:1234
+	RedisGroup           []string `toml:"redis_group"`    // Redis cluster connection address
+	RedisPassword        string   `toml:"redis_password"` // redis auth password
+	RedisConnectTimeout  int      `toml:"redis_connect_timeout"`
+	RedisReadTimeout     int      `toml:"redis_read_timeout"`
+	RedisWriteTimeout    int      `toml:"redis_write_timeout"`
+	RedisPoolMaxIdle     int      `toml:"redis_pool_max_idle"`
+	RedisPoolIdleTimeout int      `toml:"redis_pool_idle_timeout"`
+	RedisKeepalived      int      `toml:"redis_keepalived"`
+	RedisAlivedTime      int      `toml:"redis_alived_time"`
 }
 
 func SetupGlobalConfig() {
@@ -45,11 +49,15 @@ func SetupGlobalConfig() {
 	Config.LogPath = c.LogPath
 	Config.WorkersNumber = c.WorkersNumber
 
+	Config.RedisStore = c.RedisStore
 	Config.RedisAddress = c.RedisAddress
+	Config.RedisGroup = c.RedisGroup
 	Config.RedisPassword = c.RedisPassword
 	Config.RedisConnectTimeout = c.RedisConnectTimeout
 	Config.RedisReadTimeout = c.RedisReadTimeout
 	Config.RedisWriteTimeout = c.RedisWriteTimeout
 	Config.RedisPoolMaxIdle = c.RedisPoolMaxIdle
 	Config.RedisPoolIdleTimeout = c.RedisPoolIdleTimeout
+	Config.RedisKeepalived = c.RedisKeepalived
+	Config.RedisAlivedTime = c.RedisAlivedTime
 }

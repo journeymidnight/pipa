@@ -19,7 +19,7 @@ func main() {
 
 	helper.Log.Info("Pipa start!")
 	redis.Initialize()
-	defer redis.Close()
+	defer redis.RedisConn.Close()
 
 	handler.StartWorker()
 

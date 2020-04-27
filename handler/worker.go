@@ -60,7 +60,7 @@ func StartWorker() {
 }
 
 func receiveImageTask() (string, error) {
-	r, err := redis.BRPop(TaskQueue, 0)
+	r, err := redis.RedisConn.BRPop(TaskQueue, 0)
 	if err != nil {
 		return "", err
 	}
@@ -176,33 +176,11 @@ func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
 }
 
 func listenFinishedTask(resultQ FinishedTask) {
-	c := redis.Pool.Get()
-	defer c.Close()
 	if resultQ.code == 200 {
-		_, err := c.Do("MULTI")
-		if err != nil {
-			helper.Log.Error("MULTI do err:", err)
-		}
-		_, err = c.Do("SET", resultQ.url, resultQ.blob)
-		if err != nil {
-			c.Do("DISCARD")
-			helper.Log.Error("SET do err:", err)
-		}
-		_, err = c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
-		if err != nil {
-			c.Do("DISCARD")
-			helper.Log.Error("LPUSH do err:", err)
-		}
-		_, err = c.Do("EXEC")
-		if err != nil {
-			helper.Log.Error("EXEC do err:", err)
-		}
+		redis.RedisConn.LPushSucceed(resultQ.url, resultQ.uuid, resultQ.returnMessage, resultQ.blob)
 		resultQ.blob = nil
 	} else {
-		_, err := c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
-		if err != nil {
-			helper.Log.Error("EXEC do err:", err)
-		}
+
 	}
 	helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", resultQ.uuid, resultQ.url, resultQ.returnMessage))
 }

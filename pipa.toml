@@ -3,10 +3,14 @@ log_level = "info"
 log_path = "/var/log/pipa/pipa.log"
 workers_number = 64
 
+redis_store = "single"
 redis_address = "redis:6379"
+redis_group = ["redis:6379"]
 redis_password = "hehehehe"
 redis_connect_timeout = 5
 redis_read_timeout = 5
 redis_write_timeout = 5
 redis_pool_max_idle = 300
 redis_pool_idle_timeout = 30
+redis_keepalived = 16
+redis_alived_time = 60

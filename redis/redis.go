@@ -1,52 +1,29 @@
 package redis
 
 import (
-	"github.com/garyburd/redigo/redis"
 	"github.com/journeymidnight/pipa/helper"
-	"time"
+	"github.com/journeymidnight/pipa/redis/cluster"
+	"github.com/journeymidnight/pipa/redis/single"
 )
 
-var Pool *redis.Pool
+type Redis interface {
+	Close()
+	BRPop(key string, timeout uint) ([]string, error)
+	LPushSucceed(url, uuid, returnMessage string, blob []byte)
+	LPushFailed(uuid, returnMessage string)
+}
+
+var RedisConn Redis
 
 func Initialize() {
-	options := []redis.DialOption{
-		redis.DialConnectTimeout(time.Duration(helper.Config.RedisConnectTimeout) * time.Second),
-		redis.DialReadTimeout(time.Duration(helper.Config.RedisReadTimeout) * time.Second),
-		redis.DialWriteTimeout(time.Duration(helper.Config.RedisWriteTimeout) * time.Second),
+	switch helper.Config.RedisStore {
+	case "single":
+		RedisConn = single.InitializeSingle().(Redis)
+		break
+	case "cluster":
+		RedisConn = cluster.InitializeCluster().(Redis)
+		break
+	default:
+		RedisConn = single.InitializeSingle().(Redis)
 	}
-
-	if helper.Config.RedisPassword != "" {
-		options = append(options, redis.DialPassword(helper.Config.RedisPassword))
-	}
-
-	Pool = &redis.Pool{
-		MaxIdle:     helper.Config.RedisPoolMaxIdle,
-		IdleTimeout: time.Duration(helper.Config.RedisPoolIdleTimeout) * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", helper.Config.RedisAddress, options...)
-			if err != nil {
-				helper.Log.Error("connect redis failed:",err)
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			pong, err := c.Do("PING")
-			helper.Log.Error("redis PING:",pong)
-			return err
-		},
-	}
-}
-
-func Close() {
-	err := Pool.Close()
-	if err != nil {
-		helper.Log.Error("can not close redis pool. err:", err)
-	}
-}
-
-func BRPop(key string, timeout uint) ([]string, error) {
-	c := Pool.Get()
-	defer c.Close()
-	return redis.Strings(c.Do("BRPOP", key, timeout))
 }
