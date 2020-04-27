@@ -14,3 +14,4 @@ redis_pool_max_idle = 300
 redis_pool_idle_timeout = 30
 redis_keepalived = 16
 redis_alived_time = 60
+redis_set_data_max_time = 1000000

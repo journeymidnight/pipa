@@ -164,7 +164,7 @@ func selectTextType(tType string) string {
 	case FangZhengFangSong:
 		return "FZFSJW.TTF"
 	case DroidSansFallBack:
-		return "DroidSansFallBack.ttf"
+		return "DroidSansFallback.ttf"
 	default:
 		return "WQYZH.ttf"
 	}

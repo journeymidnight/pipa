@@ -180,7 +180,7 @@ func listenFinishedTask(resultQ FinishedTask) {
 		redis.RedisConn.LPushSucceed(resultQ.url, resultQ.uuid, resultQ.returnMessage, resultQ.blob)
 		resultQ.blob = nil
 	} else {
-
+		redis.RedisConn.LPushFailed(resultQ.uuid, resultQ.returnMessage)
 	}
 	helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", resultQ.uuid, resultQ.url, resultQ.returnMessage))
 }
