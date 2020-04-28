@@ -1,66 +1,99 @@
 package cluster
 
 import (
+	"github.com/gomodule/redigo/redis"
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/wuxibin89/redis-go-cluster"
+	"github.com/mna/redisc"
 	"time"
 )
 
 type ClusterRedis struct {
-	Cluster redis.Cluster
+	Cluster *redisc.Cluster
 }
 
-var cluster redis.Cluster
+var cluster *redisc.Cluster
 
 func InitializeCluster() interface{} {
-	var err error
-	cluster, err = redis.NewCluster(
-		&redis.Options{
-			StartNodes:   helper.Config.RedisGroup,
-			ConnTimeout:  time.Duration(helper.Config.RedisConnectTimeout) * time.Second,
-			ReadTimeout:  time.Duration(helper.Config.RedisReadTimeout) * time.Second,
-			WriteTimeout: time.Duration(helper.Config.RedisWriteTimeout) * time.Second,
-			KeepAlive:    helper.Config.RedisKeepalived,
-			AliveTime:    time.Duration(helper.Config.RedisAlivedTime) * time.Second,
-		})
-
-	if err != nil {
-		helper.Log.Error("redis.New error: %s", err.Error())
+	options := []redis.DialOption{
+		redis.DialConnectTimeout(time.Duration(helper.Config.RedisConnectTimeout) * time.Second),
+		redis.DialReadTimeout(time.Duration(helper.Config.RedisReadTimeout) * time.Second),
+		redis.DialWriteTimeout(time.Duration(helper.Config.RedisWriteTimeout) * time.Second),
 	}
-	r := ClusterRedis{Cluster: cluster}
+
+	if helper.Config.RedisPassword != "" {
+		options = append(options, redis.DialPassword(helper.Config.RedisPassword))
+	}
+
+	cluster = &redisc.Cluster{
+		StartupNodes: helper.Config.RedisGroup,
+		DialOptions:  options,
+		CreatePool:   createPool,
+	}
+	// initialize its mapping
+	if err := cluster.Refresh(); err != nil {
+		helper.Log.Error("Refresh failed: %v", err)
+	}
+	r := &ClusterRedis{Cluster: cluster}
 	return interface{}(r)
 }
 
+func createPool(addr string, opts ...redis.DialOption) (*redis.Pool, error) {
+	return &redis.Pool{
+		MaxIdle:     helper.Config.RedisPoolMaxIdle,
+		IdleTimeout: time.Duration(helper.Config.RedisPoolIdleTimeout) * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", addr, opts...)
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			if err != nil {
+				helper.Log.Error("redis PING:", err)
+			}
+			return err
+		},
+	}, nil
+}
+
 func (c *ClusterRedis) Close() {
+	err := c.Cluster.Close()
+	if err != nil {
+		helper.Log.Error("can not close redis pool. err:", err)
+	}
 }
 
 func (c *ClusterRedis) BRPop(key string, timeout uint) ([]string, error) {
-	return redis.Strings(c.Cluster.Do("BRPOP", key, timeout))
+	coon := c.Cluster.Get()
+	defer coon.Close()
+	return redis.Strings(coon.Do("BRPOP", key, timeout))
 }
 
 func (c *ClusterRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte) {
-	_, err := c.Cluster.Do("MULTI")
+	coon := c.Cluster.Get()
+	defer coon.Close()
+	_, err := coon.Do("MULTI")
 	if err != nil {
 		helper.Log.Error("MULTI do err:", err)
 	}
-	_, err = c.Cluster.Do("SET", url, blob)
+	_, err = coon.Do("SET", url, blob)
 	if err != nil {
-		c.Cluster.Do("DISCARD")
+		coon.Do("DISCARD")
 		helper.Log.Error("SET do err:", err)
 	}
-	_, err = c.Cluster.Do("LPUSH", uuid, returnMessage)
+	_, err = coon.Do("LPUSH", uuid, returnMessage)
 	if err != nil {
-		c.Cluster.Do("DISCARD")
+		coon.Do("DISCARD")
 		helper.Log.Error("LPUSH do err:", err)
 	}
-	_, err = c.Cluster.Do("EXEC")
+	_, err = coon.Do("EXEC")
 	if err != nil {
 		helper.Log.Error("EXEC do err:", err)
 	}
 }
 
 func (c *ClusterRedis) LPushFailed(uuid, returnMessage string) {
-	_, err := c.Cluster.Do("LPUSH", uuid, returnMessage)
+	coon := c.Cluster.Get()
+	defer coon.Close()
+	_, err := coon.Do("LPUSH", uuid, returnMessage)
 	if err != nil {
 		helper.Log.Error("EXEC do err:", err)
 	}
