@@ -1,7 +1,7 @@
 s3domain = ["s3.test.com", "s3-internal.test.com"]
 log_level = "info"
 log_path = "/var/log/pipa/pipa.log"
-workers_number = 64
+workers_number = 16
 
 redis_store = "single"
 redis_address = "redis:6379"
@@ -12,6 +12,4 @@ redis_read_timeout = 5
 redis_write_timeout = 5
 redis_pool_max_idle = 300
 redis_pool_idle_timeout = 30
-redis_keepalived = 16
-redis_alived_time = 60
 redis_set_data_max_time = 1000000
