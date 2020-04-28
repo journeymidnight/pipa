@@ -2,9 +2,7 @@ package redis
 
 import (
 	"github.com/journeymidnight/pipa/helper"
-	"github.com/journeymidnight/pipa/redis/cluster"
-	go_redis "github.com/journeymidnight/pipa/redis/go-redis"
-	"github.com/journeymidnight/pipa/redis/single"
+	goredis "github.com/journeymidnight/pipa/redis/go-redis"
 )
 
 type Redis interface {
@@ -19,15 +17,15 @@ var RedisConn Redis
 func Initialize() {
 	switch helper.Config.RedisStore {
 	case "single":
-		r := go_redis.InitializeSingle()
+		r := goredis.InitializeSingle()
 		RedisConn = r.(Redis)
 		break
 	case "cluster":
-		r := go_redis.InitializeCluster()
+		r := goredis.InitializeCluster()
 		RedisConn = r.(Redis)
 		break
 	default:
-		r := go_redis.InitializeSingle()
+		r := goredis.InitializeSingle()
 		RedisConn = r.(Redis)
 	}
 }
