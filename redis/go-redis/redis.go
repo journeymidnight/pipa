@@ -50,7 +50,7 @@ func (s *SingleRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte)
 	if err != nil {
 		helper.Log.Error("MULTI do err:", err)
 	}
-	_, err = s.client.Do("SET", url, blob).Result()
+	_, err = s.client.Do("SET", url, blob, "PX", 1000*helper.Config.RedisSetDataMaxTime).Result()
 	if err != nil {
 		s.client.Do("DISCARD")
 		helper.Log.Error("SET do err:", err)
