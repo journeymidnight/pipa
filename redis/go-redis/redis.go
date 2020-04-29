@@ -40,7 +40,7 @@ func (s *SingleRedis) Close() {
 func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
 	do := s.client.BRPop(time.Duration(timeout)*time.Second, key)
 	if _, err := do.Result(); err != nil {
-		helper.Log.Error("Cluster Mode: BRPop err:", err)
+		helper.Log.Error("BRPop err:", err)
 	}
 	return do.Result()
 }
@@ -48,28 +48,28 @@ func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
 func (s *SingleRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte) {
 	_, err := s.client.Do("MULTI").Result()
 	if err != nil {
-		helper.Log.Error("Cluster Mode: MULTI do err:", err)
+		helper.Log.Error("MULTI do err:", err)
 	}
 	_, err = s.client.Do("SET", url, blob).Result()
 	if err != nil {
 		s.client.Do("DISCARD")
-		helper.Log.Error("Cluster Mode: SET do err:", err)
+		helper.Log.Error("SET do err:", err)
 	}
 	_, err = s.client.LPush(uuid, returnMessage).Result()
 	if err != nil {
 		s.client.Do("DISCARD")
-		helper.Log.Error("Cluster Mode: LPUSH do err:", err)
+		helper.Log.Error("LPUSH do err:", err)
 	}
 	_, err = s.client.Do("EXEC").Result()
 	if err != nil {
-		helper.Log.Error("Cluster Mode: EXEC do err:", err)
+		helper.Log.Error("EXEC do err:", err)
 	}
 }
 
 func (s *SingleRedis) LPushFailed(uuid, returnMessage string) {
 	_, err := s.client.LPush(uuid, returnMessage).Result()
 	if err != nil {
-		helper.Log.Error("Cluster Mode: EXEC do err:", err)
+		helper.Log.Error("EXEC do err:", err)
 	}
 }
 
