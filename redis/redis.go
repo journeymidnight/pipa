@@ -14,18 +14,19 @@ type Redis interface {
 
 var RedisConn Redis
 
-func Initialize() {
+func Initialize() error {
 	switch helper.Config.RedisStore {
 	case "single":
-		r := goredis.InitializeSingle()
+		r, err := goredis.InitializeSingle()
 		RedisConn = r.(Redis)
-		break
+		return err
 	case "cluster":
-		r := goredis.InitializeCluster()
+		r, err := goredis.InitializeCluster()
 		RedisConn = r.(Redis)
-		break
+		return err
 	default:
-		r := goredis.InitializeSingle()
+		r, err := goredis.InitializeSingle()
 		RedisConn = r.(Redis)
+		return err
 	}
 }

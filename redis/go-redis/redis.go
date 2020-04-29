@@ -12,7 +12,7 @@ type SingleRedis struct {
 
 var client *redis.Client
 
-func InitializeSingle() interface{} {
+func InitializeSingle() (interface{}, error) {
 	options := &redis.Options{
 		Addr:         helper.Config.RedisAddress,
 		Password:     helper.Config.RedisPassword,
@@ -26,9 +26,10 @@ func InitializeSingle() interface{} {
 	_, err := client.Ping().Result()
 	if err != nil {
 		helper.Log.Error("redis PING err:", err)
+		return nil, err
 	}
 	r := &SingleRedis{client: client}
-	return interface{}(r)
+	return interface{}(r), err
 }
 
 func (s *SingleRedis) Close() {
@@ -39,10 +40,11 @@ func (s *SingleRedis) Close() {
 
 func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
 	do := s.client.BRPop(time.Duration(timeout)*time.Second, key)
-	if _, err := do.Result(); err != nil {
+	strings, err := do.Result()
+	if err != nil {
 		helper.Log.Error("BRPop err:", err)
 	}
-	return do.Result()
+	return strings, err
 }
 
 func (s *SingleRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte) {
@@ -79,7 +81,7 @@ type ClusterRedis struct {
 
 var cluster *redis.ClusterClient
 
-func InitializeCluster() interface{} {
+func InitializeCluster() (interface{}, error) {
 	clusterRedis := &redis.ClusterOptions{
 		Addrs:        helper.Config.RedisGroup,
 		Password:     helper.Config.RedisPassword,
@@ -92,9 +94,10 @@ func InitializeCluster() interface{} {
 	_, err := cluster.Ping().Result()
 	if err != nil {
 		helper.Log.Error("Cluster Mode redis PING err:", err)
+		return nil, err
 	}
 	r := &ClusterRedis{cluster: cluster}
-	return interface{}(r)
+	return interface{}(r), err
 }
 
 func (c *ClusterRedis) Close() {

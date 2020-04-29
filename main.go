@@ -18,7 +18,11 @@ func main() {
 	defer helper.Log.Close()
 
 	helper.Log.Info("Pipa start!")
-	redis.Initialize()
+	err := redis.Initialize()
+	if err != nil {
+		helper.Log.Error("Initialize redis err:", err)
+		return
+	}
 	defer redis.RedisConn.Close()
 
 	handler.StartWorker()
