@@ -21,6 +21,7 @@ const PictureMAxSize = 20 << 20
 
 var (
 	finishPipa chan bool
+	taskQueue  chan string
 	wg         sync.WaitGroup
 )
 
@@ -53,18 +54,27 @@ type FinishedTask struct {
 
 func StartWorker() {
 	finishPipa = make(chan bool)
-
+	taskQueue = make(chan string)
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		go slave(i)
 	}
+	go receiveImageTask()
 }
 
-func receiveImageTask() (string, error) {
-	r, err := redis.RedisConn.BRPop(TaskQueue, 0)
-	if err != nil {
-		return "", err
+func receiveImageTask() {
+	for {
+		select {
+		case <-finishPipa:
+			helper.Log.Info("stop receive:")
+			return
+		default:
+			r, err := redis.RedisConn.BRPop(TaskQueue, 10)
+			if err != nil {
+				continue
+			}
+			taskQueue <- r[1]
+		}
 	}
-	return r[1], nil
 }
 
 func slave(slave_num int) {
@@ -75,10 +85,9 @@ func slave(slave_num int) {
 		case <-finishPipa:
 			helper.Log.Info("stop slave:", slave_num)
 			return
-		default:
+		case task := <-taskQueue:
 			wg.Add(1)
-			task, err := receiveImageTask()
-			if err != nil || len(task) == 0 {
+			if len(task) == 0 {
 				wg.Done()
 				continue
 			}
@@ -86,7 +95,7 @@ func slave(slave_num int) {
 			helper.Log.Info("slave", slave_num, "receive task:", task)
 
 			var taskData Task
-			err = json.Unmarshal([]byte(task), &taskData)
+			err := json.Unmarshal([]byte(task), &taskData)
 			if err != nil {
 				returnError(ErrInvalidTaskString, Task{})
 				wg.Done()
@@ -119,6 +128,8 @@ func slave(slave_num int) {
 				listenFinishedTask(ReturnQ)
 			}
 			wg.Done()
+		default:
+			continue
 		}
 	}
 }
@@ -204,10 +215,11 @@ func returnError(err error, t Task) {
 
 func Stop() {
 	helper.Log.Info("Stopping Pipa")
-	for i := 0; i < helper.Config.WorkersNumber; i++ {
+	for i := 0; i < helper.Config.WorkersNumber+1; i++ {
 		finishPipa <- true
 	}
 	wg.Wait()
 	helper.Log.Info("Done")
+	close(taskQueue)
 	close(finishPipa)
 }

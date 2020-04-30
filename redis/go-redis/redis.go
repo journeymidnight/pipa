@@ -43,7 +43,7 @@ func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
 	defer conn.Close()
 	do := conn.BRPop(time.Duration(timeout)*time.Second, key)
 	strings, err := do.Result()
-	if err != nil {
+	if err != nil && err.Error() != "redis: nil" {
 		helper.Log.Error("BRPop err:", err)
 	}
 	return strings, err
@@ -111,7 +111,7 @@ func (c *ClusterRedis) Close() {
 
 func (c *ClusterRedis) BRPop(key string, timeout uint) ([]string, error) {
 	do := c.cluster.BRPop(time.Duration(timeout)*time.Second, key)
-	if _, err := do.Result(); err != nil {
+	if _, err := do.Result(); err != nil && err.Error() != "redis: nil" {
 		helper.Log.Error("Cluster Mode: BRPop err:", err)
 	}
 	return do.Result()
