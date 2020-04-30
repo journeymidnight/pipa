@@ -39,7 +39,9 @@ func (s *SingleRedis) Close() {
 }
 
 func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
-	do := s.client.BRPop(time.Duration(timeout)*time.Second, key)
+	conn := s.client.Conn()
+	defer conn.Close()
+	do := conn.BRPop(time.Duration(timeout)*time.Second, key)
 	strings, err := do.Result()
 	if err != nil {
 		helper.Log.Error("BRPop err:", err)
@@ -48,28 +50,29 @@ func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
 }
 
 func (s *SingleRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte) {
-	_, err := s.client.Do("MULTI").Result()
+	conn := s.client.Conn()
+	defer conn.Close()
+	tx := conn.TxPipeline()
+	_, err := tx.Set(url, blob, time.Duration(1000*helper.Config.RedisSetDataMaxTime)).Result()
 	if err != nil {
-		helper.Log.Error("MULTI do err:", err)
-	}
-	_, err = s.client.Do("SET", url, blob, "PX", 1000*helper.Config.RedisSetDataMaxTime).Result()
-	if err != nil {
-		s.client.Do("DISCARD")
+		tx.Discard()
 		helper.Log.Error("SET do err:", err)
 	}
-	_, err = s.client.LPush(uuid, returnMessage).Result()
+	_, err = tx.LPush(uuid, returnMessage).Result()
 	if err != nil {
-		s.client.Do("DISCARD")
+		tx.Discard()
 		helper.Log.Error("LPUSH do err:", err)
 	}
-	_, err = s.client.Do("EXEC").Result()
+	_, err = tx.Exec()
 	if err != nil {
 		helper.Log.Error("EXEC do err:", err)
 	}
 }
 
 func (s *SingleRedis) LPushFailed(uuid, returnMessage string) {
-	_, err := s.client.LPush(uuid, returnMessage).Result()
+	conn := s.client.Conn()
+	defer conn.Close()
+	_, err := conn.LPush(uuid, returnMessage).Result()
 	if err != nil {
 		helper.Log.Error("EXEC do err:", err)
 	}
