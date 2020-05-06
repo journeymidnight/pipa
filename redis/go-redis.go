@@ -1,4 +1,4 @@
-package go_redis
+package redis
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func InitializeSingle() (interface{}, error) {
 		return nil, err
 	}
 	r := &SingleRedis{
-		client: client,
+		client:  client,
 		circuit: cb,
 	}
 	return interface{}(r), err

@@ -7,7 +7,6 @@ import (
 	"github.com/journeymidnight/pipa/helper"
 	. "github.com/journeymidnight/pipa/library"
 	"github.com/journeymidnight/pipa/redis"
-	go_redis "github.com/journeymidnight/pipa/redis/go-redis"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -74,7 +73,7 @@ func receiveImageTask() {
 		default:
 			r, err := redis.RedisConn.BRPop(TaskQueue, 15)
 			if err != nil || len(r) < 2 {
-				if err == go_redis.CircuitBroken {
+				if err == redis.CircuitBroken {
 					helper.Log.Error("Redis status is abnormal, exit the main program")
 					redisErrStop = true
 					SignalQueue <- syscall.SIGQUIT
