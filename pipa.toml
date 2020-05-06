@@ -13,3 +13,9 @@ redis_write_timeout = 5
 redis_pool_max_idle = 300
 redis_pool_idle_timeout = 30
 redis_set_data_max_time = 1000000
+
+cache_circuit_close_sleep_window = 1
+cache_circuit_close_required_count = 3
+cache_circuit_open_threshold = 1
+cache_circuit_exec_timeout = 1000
+cache_circuit_exec_max_concurrent = 10

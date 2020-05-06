@@ -7,12 +7,14 @@ import (
 	"github.com/journeymidnight/pipa/helper"
 	. "github.com/journeymidnight/pipa/library"
 	"github.com/journeymidnight/pipa/redis"
+	go_redis "github.com/journeymidnight/pipa/redis/go-redis"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -52,6 +54,8 @@ type FinishedTask struct {
 	blob          []byte
 }
 
+var redisErrStop = false
+
 func StartWorker() {
 	finishPipa = make(chan bool)
 	taskQueue = make(chan string)
@@ -68,8 +72,14 @@ func receiveImageTask() {
 			helper.Log.Info("stop receive:")
 			return
 		default:
-			r, err := redis.RedisConn.BRPop(TaskQueue, 10)
-			if err != nil {
+			r, err := redis.RedisConn.BRPop(TaskQueue, 15)
+			if err != nil || len(r) < 2 {
+				if err == go_redis.CircuitBroken {
+					helper.Log.Error("Redis status is abnormal, exit the main program")
+					redisErrStop = true
+					SignalQueue <- syscall.SIGQUIT
+					return
+				}
 				continue
 			}
 			taskQueue <- r[1]
@@ -215,7 +225,11 @@ func returnError(err error, t Task) {
 
 func Stop() {
 	helper.Log.Info("Stopping Pipa")
-	for i := 0; i < helper.Config.WorkersNumber+1; i++ {
+	counts := helper.Config.WorkersNumber
+	if !redisErrStop {
+		counts += 1
+	}
+	for i := 0; i < counts; i++ {
 		finishPipa <- true
 	}
 	wg.Wait()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/journeymidnight/pipa/handler"
-	"os"
 	"os/signal"
 	"syscall"
 
@@ -28,10 +27,9 @@ func main() {
 	handler.StartWorker()
 
 	signal.Ignore()
-	signalQueue := make(chan os.Signal)
-	signal.Notify(signalQueue, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR1)
+	signal.Notify(handler.SignalQueue, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR1)
 	for {
-		s := <-signalQueue
+		s := <-handler.SignalQueue
 		switch s {
 		case syscall.SIGHUP:
 			helper.SetupGlobalConfig()

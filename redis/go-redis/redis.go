@@ -1,34 +1,51 @@
 package go_redis
 
 import (
+	"context"
+	"errors"
+	"github.com/cep21/circuit"
 	"github.com/go-redis/redis/v7"
+	"github.com/journeymidnight/pipa/circuitbreak"
 	"github.com/journeymidnight/pipa/helper"
 	"time"
 )
 
 type SingleRedis struct {
 	client *redis.Client
+	circuit *circuit.Circuit
 }
 
-var client *redis.Client
+var (
+	client *redis.Client
+	cb *circuit.Circuit
+)
+
+var (
+	CircuitBroken = errors.New("redis circuit is broken!")
+)
 
 func InitializeSingle() (interface{}, error) {
 	options := &redis.Options{
 		Addr:         helper.Config.RedisAddress,
 		Password:     helper.Config.RedisPassword,
+		MaxRetries:   helper.Config.RedisMaxRetries,
 		DialTimeout:  time.Duration(helper.Config.RedisConnectTimeout) * time.Second,
 		ReadTimeout:  time.Duration(helper.Config.RedisReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(helper.Config.RedisWriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(helper.Config.RedisPoolIdleTimeout) * time.Second,
 	}
 
+	cb := circuitbreak.NewCacheCircuit()
 	client = redis.NewClient(options)
 	_, err := client.Ping().Result()
 	if err != nil {
 		helper.Log.Error("redis PING err:", err)
 		return nil, err
 	}
-	r := &SingleRedis{client: client}
+	r := &SingleRedis{
+		client: client,
+		circuit: cb,
+	}
 	return interface{}(r), err
 }
 
@@ -38,22 +55,35 @@ func (s *SingleRedis) Close() {
 	}
 }
 
-func (s *SingleRedis) BRPop(key string, timeout uint) ([]string, error) {
-	conn := s.client.Conn()
-	defer conn.Close()
-	do := conn.BRPop(time.Duration(timeout)*time.Second, key)
-	strings, err := do.Result()
-	if err != nil && err.Error() != "redis: nil" {
-		helper.Log.Error("BRPop err:", err)
-	}
-	return strings, err
+func (s *SingleRedis) BRPop(key string, timeout uint) (strings []string, err error) {
+	err = s.circuit.Execute(
+		context.Background(),
+		func(ctx context.Context) error {
+			c := s.client.WithContext(ctx)
+			conn := c.Conn()
+			defer conn.Close()
+			do := conn.BRPop(time.Duration(timeout)*time.Second, key)
+			strings, err = do.Result()
+			if err == redis.Nil {
+				return nil
+			}
+			if err != nil {
+				helper.Log.Error("BRPop err:", err)
+			}
+			return err
+		},
+		func(ctx context.Context, err error) error {
+			return CircuitBroken
+		},
+	)
+	return
 }
 
 func (s *SingleRedis) LPushSucceed(url, uuid, returnMessage string, blob []byte) {
 	conn := s.client.Conn()
 	defer conn.Close()
 	tx := conn.TxPipeline()
-	_, err := tx.Set(url, blob, time.Duration(1000*helper.Config.RedisSetDataMaxTime)).Result()
+	_, err := tx.Set(url, blob, time.Duration(1000*helper.Config.RedisSetDataMaxTime)*time.Second).Result()
 	if err != nil {
 		tx.Discard()
 		helper.Log.Error("SET do err:", err)
