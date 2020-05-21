@@ -5,6 +5,7 @@ import (
 	. "github.com/journeymidnight/pipa/error"
 	"github.com/journeymidnight/pipa/helper"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -14,6 +15,8 @@ const (
 	OssProcess   = "x-oss-process"
 	DefaultColor = "#FFFFFF"
 )
+
+var SignalQueue = make(chan os.Signal)
 
 func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations []Operation, err error) {
 	operations = []Operation{}
@@ -51,6 +54,9 @@ func ParseUrl(taskUrl string, isWatermark bool) (downloadUrl string, operations 
 		return "", operations, ErrNotFoundOssProcess
 	}
 	params := strings.Split(processParams, "/")
+	if len(params) <= 1 {
+		return "", operations, ErrNullParameter
+	}
 	for _, param := range params[1:] {
 		if param == "" {
 			continue

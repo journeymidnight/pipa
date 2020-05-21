@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -21,6 +22,7 @@ const PictureMAxSize = 20 << 20
 
 var (
 	finishPipa chan bool
+	taskQueue  chan string
 	wg         sync.WaitGroup
 )
 
@@ -51,20 +53,37 @@ type FinishedTask struct {
 	blob          []byte
 }
 
+var redisErrStop = false
+
 func StartWorker() {
 	finishPipa = make(chan bool)
-
+	taskQueue = make(chan string)
 	for i := 0; i < helper.Config.WorkersNumber; i++ {
 		go slave(i)
 	}
+	go receiveImageTask()
 }
 
-func receiveImageTask() (string, error) {
-	r, err := redis.BRPop(TaskQueue, 0)
-	if err != nil {
-		return "", err
+func receiveImageTask() {
+	for {
+		select {
+		case <-finishPipa:
+			helper.Log.Info("stop receive:")
+			return
+		default:
+			r, err := redis.RedisConn.BRPop(TaskQueue, 15)
+			if err != nil || len(r) < 2 {
+				if err == redis.CircuitBroken {
+					helper.Log.Error("Redis status is abnormal, exit the main program")
+					redisErrStop = true
+					SignalQueue <- syscall.SIGQUIT
+					return
+				}
+				continue
+			}
+			taskQueue <- r[1]
+		}
 	}
-	return r[1], nil
 }
 
 func slave(slave_num int) {
@@ -75,10 +94,9 @@ func slave(slave_num int) {
 		case <-finishPipa:
 			helper.Log.Info("stop slave:", slave_num)
 			return
-		default:
+		case task := <-taskQueue:
 			wg.Add(1)
-			task, err := receiveImageTask()
-			if err != nil || len(task) == 0 {
+			if len(task) == 0 {
 				wg.Done()
 				continue
 			}
@@ -86,7 +104,7 @@ func slave(slave_num int) {
 			helper.Log.Info("slave", slave_num, "receive task:", task)
 
 			var taskData Task
-			err = json.Unmarshal([]byte(task), &taskData)
+			err := json.Unmarshal([]byte(task), &taskData)
 			if err != nil {
 				returnError(ErrInvalidTaskString, Task{})
 				wg.Done()
@@ -119,6 +137,8 @@ func slave(slave_num int) {
 				listenFinishedTask(ReturnQ)
 			}
 			wg.Done()
+		default:
+			continue
 		}
 	}
 }
@@ -176,33 +196,11 @@ func NewImageProcessTask(lib Library, taskData Task) (ImageProcessTask, error) {
 }
 
 func listenFinishedTask(resultQ FinishedTask) {
-	c := redis.Pool.Get()
-	defer c.Close()
 	if resultQ.code == 200 {
-		_, err := c.Do("MULTI")
-		if err != nil {
-			helper.Log.Error("MULTI do err:", err)
-		}
-		_, err = c.Do("SET", resultQ.url, resultQ.blob)
-		if err != nil {
-			c.Do("DISCARD")
-			helper.Log.Error("SET do err:", err)
-		}
-		_, err = c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
-		if err != nil {
-			c.Do("DISCARD")
-			helper.Log.Error("LPUSH do err:", err)
-		}
-		_, err = c.Do("EXEC")
-		if err != nil {
-			helper.Log.Error("EXEC do err:", err)
-		}
+		redis.RedisConn.LPushSucceed(resultQ.url, resultQ.uuid, resultQ.returnMessage, resultQ.blob)
 		resultQ.blob = nil
 	} else {
-		_, err := c.Do("LPUSH", resultQ.uuid, resultQ.returnMessage)
-		if err != nil {
-			helper.Log.Error("EXEC do err:", err)
-		}
+		redis.RedisConn.LPushFailed(resultQ.uuid, resultQ.returnMessage)
 	}
 	helper.Log.Info(fmt.Sprintf("finishing task [%s] for %s code %s\n", resultQ.uuid, resultQ.url, resultQ.returnMessage))
 }
@@ -226,10 +224,15 @@ func returnError(err error, t Task) {
 
 func Stop() {
 	helper.Log.Info("Stopping Pipa")
-	for i := 0; i < helper.Config.WorkersNumber; i++ {
+	counts := helper.Config.WorkersNumber
+	if !redisErrStop {
+		counts += 1
+	}
+	for i := 0; i < counts; i++ {
 		finishPipa <- true
 	}
 	wg.Wait()
 	helper.Log.Info("Done")
+	close(taskQueue)
 	close(finishPipa)
 }
