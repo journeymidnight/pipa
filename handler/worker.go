@@ -137,8 +137,6 @@ func slave(slave_num int) {
 				listenFinishedTask(ReturnQ)
 			}
 			wg.Done()
-		default:
-			continue
 		}
 	}
 }
